@@ -24,7 +24,7 @@ import kotlinx.serialization.json.Json
 import java.util.UUID
 
 @Composable
-fun ControlScreen() {
+fun ControlScreen(onWearError: (String) -> Unit = {}) {
     val context = LocalContext.current
     var message by remember { mutableStateOf("Stop!") }
     var duration by remember { mutableStateOf(15f) }
@@ -42,21 +42,21 @@ fun ControlScreen() {
         Spacer(Modifier.height(5.dp))
 
         Row(Modifier.padding(5.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Button(onClick = { send(context, selectedType, NotificationType.VIBRATION1, message, duration.toInt(), selectedGame) }) { Text("Vib Short") }
-            Button(onClick = { send(context, selectedType, NotificationType.VIBRATION2, message, duration.toInt(), selectedGame) }) { Text("Vib Long") }
+            Button(onClick = { send(context, selectedType, NotificationType.VIBRATION1, message, duration.toInt(), selectedGame, onWearError) }) { Text("Vib Short") }
+            Button(onClick = { send(context, selectedType, NotificationType.VIBRATION2, message, duration.toInt(), selectedGame, onWearError) }) { Text("Vib Long") }
         }
         Row(Modifier.padding(5.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Button(onClick = { send(context, selectedType, NotificationType.SOUND, message, duration.toInt(), selectedGame) }) { Text("Sound Short") }
-            Button(onClick = { send(context, selectedType, NotificationType.SOUND, message, duration.toInt(), selectedGame) }) { Text("Sound Long") }
+            Button(onClick = { send(context, selectedType, NotificationType.SOUND, message, duration.toInt(), selectedGame, onWearError) }) { Text("Sound Short") }
+            Button(onClick = { send(context, selectedType, NotificationType.SOUND, message, duration.toInt(), selectedGame, onWearError) }) { Text("Sound Long") }
         }
         Row(Modifier.padding(5.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Button(onClick = { send(context, selectedType, NotificationType.VIBRATION_SOUND, message, duration.toInt(), selectedGame) }, Modifier.width(140.dp)) { Text("Vib+Sound Short") }
-            Button(onClick = { send(context, selectedType, NotificationType.VIBRATION_SOUND2, message, duration.toInt(), selectedGame) }, Modifier.width(140.dp)) { Text("Vib+Sound Long") }
+            Button(onClick = { send(context, selectedType, NotificationType.VIBRATION_SOUND, message, duration.toInt(), selectedGame, onWearError) }, Modifier.width(140.dp)) { Text("Vib+Sound Short") }
+            Button(onClick = { send(context, selectedType, NotificationType.VIBRATION_SOUND2, message, duration.toInt(), selectedGame, onWearError) }, Modifier.width(140.dp)) { Text("Vib+Sound Long") }
         }
         Row(Modifier.padding(5.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-            Button(onClick = { send(context, selectedType, NotificationType.ANNOY_VIB, message, duration.toInt(), selectedGame) }, Modifier.width(105.dp)) { Text("Perma Vib") }
-            Button(onClick = { send(context, selectedType, NotificationType.ANNOY_SOUND, message, duration.toInt(), selectedGame) }, Modifier.width(95.dp)) { Text("Perma Sound") }
-            Button(onClick = { send(context, selectedType, NotificationType.ANNOY_VIBRATION_SOUND, message, duration.toInt(), selectedGame) }, Modifier.width(115.dp)) { Text("Perma Both") }
+            Button(onClick = { send(context, selectedType, NotificationType.ANNOY_VIB, message, duration.toInt(), selectedGame, onWearError) }, Modifier.width(105.dp)) { Text("Perma Vib") }
+            Button(onClick = { send(context, selectedType, NotificationType.ANNOY_SOUND, message, duration.toInt(), selectedGame, onWearError) }, Modifier.width(95.dp)) { Text("Perma Sound") }
+            Button(onClick = { send(context, selectedType, NotificationType.ANNOY_VIBRATION_SOUND, message, duration.toInt(), selectedGame, onWearError) }, Modifier.width(115.dp)) { Text("Perma Both") }
         }
 
         Spacer(Modifier.height(5.dp))
@@ -77,13 +77,13 @@ fun ControlScreen() {
         SliderWithInput(duration, { duration = it }, 1f..60f, 1f, label = "")
 
         ConfirmActionButton {
-            send(context, "Stop", NotificationType.CANCEL, "", 0, "None")
+            send(context, "Stop", NotificationType.CANCEL, "", 0, "None", onWearError)
         }
     }
 }
 
 private fun send(context: Context, type: String, notification: NotificationType,
-                 message: String, duration: Int, gameName: String) {
+                 message: String, duration: Int, gameName: String, onWearError: (String) -> Unit) {
     val gameType = when (gameName) {
         "Lock Picking" -> GameType.LOCK_PICKING
         "Simon Says" -> GameType.SIMON_SAYS
@@ -100,5 +100,5 @@ private fun send(context: Context, type: String, notification: NotificationType,
         gameType = gameType
     )
     ServerState.lastInterventionSentAt = System.currentTimeMillis()
-    WearMessageSender(context).sendIntervention(Json.encodeToString(intervention))
+    WearMessageSender(context).sendIntervention(Json.encodeToString(intervention), onError = onWearError)
 }

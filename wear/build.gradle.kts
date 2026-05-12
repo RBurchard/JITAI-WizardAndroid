@@ -13,7 +13,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.jitaicompanion"
+        applicationId = "com.BWPStudio.JITAIWizard"
         minSdk = 33
         targetSdk = 36
         versionCode = 1

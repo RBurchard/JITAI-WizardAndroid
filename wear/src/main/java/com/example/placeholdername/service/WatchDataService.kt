@@ -24,9 +24,14 @@ import java.util.concurrent.CopyOnWriteArrayList
 class WatchDataService : Service(), SensorEventListener {
 
     companion object {
+        private const val TAG = "WatchDataService"
         private const val CHANNEL_ID = "watch_data_channel"
         private const val NOTIFICATION_ID = 1001
         private const val BATCH_INTERVAL_MS = 5000L
+
+        @Volatile
+        var isRunning = false
+            private set
     }
 
     private lateinit var sensorManager: SensorManager
@@ -35,6 +40,15 @@ class WatchDataService : Service(), SensorEventListener {
     private var sessionId = ""
     private var latestHeartRate = 0f
     private var latestStepCount = 0
+    private var latestGyroX = 0f
+    private var latestGyroY = 0f
+    private var latestGyroZ = 0f
+    private var latestRotationX = 0f
+    private var latestRotationY = 0f
+    private var latestRotationZ = 0f
+    private var latestRotationW = 0f
+    private var latestBarometer = 0f
+    private var latestLight = 0f
     private var batchJob: Job? = null
     private val serviceScope = CoroutineScope(Dispatchers.IO)
 
@@ -46,6 +60,7 @@ class WatchDataService : Service(), SensorEventListener {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        isRunning = true
         sessionId = intent?.getStringExtra("sessionId") ?: ""
         startForeground(NOTIFICATION_ID, buildNotification())
         registerSensors()
@@ -54,14 +69,26 @@ class WatchDataService : Service(), SensorEventListener {
     }
 
     private fun registerSensors() {
-        sensorManager.getDefaultSensor(Sensor.TYPE_HEART_RATE)?.let {
-            sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_NORMAL)
+        registerSensor(Sensor.TYPE_HEART_RATE, SensorManager.SENSOR_DELAY_NORMAL, "heart_rate")
+        registerSensor(Sensor.TYPE_ACCELEROMETER, SensorManager.SENSOR_DELAY_GAME, "accelerometer")
+        registerSensor(Sensor.TYPE_STEP_COUNTER, SensorManager.SENSOR_DELAY_NORMAL, "step_counter")
+        registerSensor(Sensor.TYPE_GYROSCOPE, SensorManager.SENSOR_DELAY_GAME, "gyroscope")
+        registerSensor(Sensor.TYPE_ROTATION_VECTOR, SensorManager.SENSOR_DELAY_GAME, "rotation_vector")
+        registerSensor(Sensor.TYPE_PRESSURE, SensorManager.SENSOR_DELAY_NORMAL, "barometer")
+        registerSensor(Sensor.TYPE_LIGHT, SensorManager.SENSOR_DELAY_NORMAL, "light")
+    }
+
+    private fun registerSensor(type: Int, delay: Int, label: String) {
+        val sensor = sensorManager.getDefaultSensor(type)
+        if (sensor == null) {
+            Log.w(TAG, "Sensor missing: $label")
+            return
         }
-        sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)?.let {
-            sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_GAME)
-        }
-        sensorManager.getDefaultSensor(Sensor.TYPE_STEP_COUNTER)?.let {
-            sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_NORMAL)
+        val registered = sensorManager.registerListener(this, sensor, delay)
+        if (registered) {
+            Log.d(TAG, "Sensor registered: $label (${sensor.name}), delay=$delay")
+        } else {
+            Log.w(TAG, "Failed to register sensor: $label (${sensor.name})")
         }
     }
 
@@ -69,6 +96,19 @@ class WatchDataService : Service(), SensorEventListener {
         when (event.sensor.type) {
             Sensor.TYPE_HEART_RATE -> latestHeartRate = event.values[0]
             Sensor.TYPE_STEP_COUNTER -> latestStepCount = event.values[0].toInt()
+            Sensor.TYPE_GYROSCOPE -> {
+                latestGyroX = event.values[0]
+                latestGyroY = event.values[1]
+                latestGyroZ = event.values[2]
+            }
+            Sensor.TYPE_ROTATION_VECTOR -> {
+                latestRotationX = if (event.values.size > 0) event.values[0] else 0f
+                latestRotationY = if (event.values.size > 1) event.values[1] else 0f
+                latestRotationZ = if (event.values.size > 2) event.values[2] else 0f
+                latestRotationW = if (event.values.size > 3) event.values[3] else 0f
+            }
+            Sensor.TYPE_PRESSURE -> latestBarometer = event.values[0]
+            Sensor.TYPE_LIGHT -> latestLight = event.values[0]
             Sensor.TYPE_ACCELEROMETER -> {
                 snapshotBuffer.add(
                     WatchDataSnapshot(
@@ -77,6 +117,15 @@ class WatchDataService : Service(), SensorEventListener {
                         accelX = event.values[0],
                         accelY = event.values[1],
                         accelZ = event.values[2],
+                        gyroX = latestGyroX,
+                        gyroY = latestGyroY,
+                        gyroZ = latestGyroZ,
+                        rotationX = latestRotationX,
+                        rotationY = latestRotationY,
+                        rotationZ = latestRotationZ,
+                        rotationW = latestRotationW,
+                        barometer = latestBarometer,
+                        light = latestLight,
                         stepCount = latestStepCount,
                         sessionId = sessionId
                     )
@@ -103,6 +152,7 @@ class WatchDataService : Service(), SensorEventListener {
     }
 
     override fun onDestroy() {
+        isRunning = false
         super.onDestroy()
         batchJob?.cancel()
         sensorManager.unregisterListener(this)

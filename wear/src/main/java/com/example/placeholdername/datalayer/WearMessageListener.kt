@@ -4,9 +4,11 @@ import android.content.Intent
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import androidx.core.content.ContextCompat
 import com.example.jitaicompanion.convention.Protocol
 import com.example.jitaicompanion.convention.models.GameType
 import com.example.jitaicompanion.convention.models.Intervention
+import com.example.jitaicompanion.service.WatchDataService
 import com.example.jitaicompanion.ui.InterventionActivity
 import com.example.jitaicompanion.ui.games.LockPickingGameActivity
 import com.example.jitaicompanion.ui.games.SimonSaysGameActivity
@@ -20,11 +22,23 @@ class WearMessageListener : WearableListenerService() {
 
     private val mainHandler = Handler(Looper.getMainLooper())
     private val json = Json { ignoreUnknownKeys = true }
+    private val sender by lazy { WearMessageSender(this) }
 
     override fun onMessageReceived(event: MessageEvent) {
+        ensureDataServiceRunning()
         when (event.path) {
             Protocol.PATH_INTERVENTION -> handleIntervention(String(event.data))
             Protocol.PATH_PHONE_TASK -> showCheckPhoneScreen()
+            Protocol.PATH_PING -> handlePing(String(event.data))
+        }
+    }
+
+    private fun ensureDataServiceRunning() {
+        if (!WatchDataService.isRunning) {
+            ContextCompat.startForegroundService(
+                applicationContext,
+                Intent(applicationContext, WatchDataService::class.java)
+            )
         }
     }
 
@@ -35,6 +49,8 @@ class WearMessageListener : WearableListenerService() {
             Log.e("WearMessageListener", "Failed to parse intervention", e)
             return
         }
+
+        Log.d("WearMessageListener", "Intervention received: ${intervention.type}")
 
         mainHandler.post {
             InterventionActivity.finishCurrent()
@@ -56,6 +72,11 @@ class WearMessageListener : WearableListenerService() {
             startActivity(intent)
             Log.d("WearMessageListener", "Started ${targetClass.simpleName}")
         }
+    }
+
+    private fun handlePing(data: String) {
+        Log.d("WearMessageListener", "Ping received: $data")
+        sender.sendPong("pong:${System.currentTimeMillis()}")
     }
 
     private fun showCheckPhoneScreen() {

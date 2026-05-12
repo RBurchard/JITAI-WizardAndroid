@@ -6,6 +6,7 @@
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.BODY_SENSORS" />
+    <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_HEALTH" />
@@ -23,14 +24,7 @@
             android:exported="true">
             <intent-filter>
                 <action android:name="com.google.android.gms.wearable.MESSAGE_RECEIVED" />
-                <data
-                    android:host="*"
-                    android:pathPrefix="/intervention"
-                    android:scheme="wear" />
-                <data
-                    android:host="*"
-                    android:pathPrefix="/phone"
-                    android:scheme="wear" />
+                <data android:scheme="wear" android:host="*" />
             </intent-filter>
         </service>
 
@@ -108,9 +102,20 @@
         <uses-library android:name="com.google.android.wearable" android:required="true" />
         <uses-library android:name="wear-sdk" android:required="false" />
 
+        <!-- This app requires the companion phone app -->
         <meta-data
             android:name="com.google.android.wearable.standalone"
+            android:value="false" />
+
+        <!-- Enable Wearable Data Layer API -->
+        <meta-data
+            android:name="com.google.android.gms.wearable.DATA_LAYER_API_ENABLED"
             android:value="true" />
+
+        <!-- Declare watch capabilities so the phone can discover this node -->
+        <meta-data
+            android:name="com.google.android.wearable.APP_CAPABILITIES"
+            android:resource="@xml/wear_app_capabilities" />
 
         <activity
             android:name=".presentation.MainActivity"

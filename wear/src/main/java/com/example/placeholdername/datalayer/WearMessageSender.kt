@@ -18,46 +18,54 @@ import kotlinx.serialization.json.Json
 
 class WearMessageSender(private val context: Context) {
 
-    private val messageClient: MessageClient = Wearable.getMessageClient(context)
-    private val nodeClient = Wearable.getNodeClient(context)
-    private var cachedNode: Node? = null
-
-    private suspend fun resolveNode(): Node? {
-        if (cachedNode != null) return cachedNode
-        val nodes = nodeClient.connectedNodes.await()
-        cachedNode = nodes.firstOrNull()
-        return cachedNode
+    companion object {
+        private const val TAG = "WearMessageSender"
     }
 
-    fun sendResponse(message: String) {
-        CoroutineScope(Dispatchers.IO).launch {
-            val node = resolveNode()
-            node?.let {
-                try {
-                    messageClient.sendMessage(it.id, Protocol.PATH_INTERVENTION_RESPONSE, message.toByteArray()).await()
-                } catch (e: Exception) {
-                    Log.e("WearMessageSender", "Failed to send response", e)
-                    withContext(Dispatchers.Main) {
-                        Toast.makeText(context, "Failed to send response: ${e.message}", Toast.LENGTH_SHORT).show()
-                    }
+    private val messageClient: MessageClient = Wearable.getMessageClient(context)
+    private val nodeClient = Wearable.getNodeClient(context)
+
+    private suspend fun resolveNodes(): List<Node> = nodeClient.connectedNodes.await()
+
+    private suspend fun sendToNodes(path: String, payload: ByteArray, label: String) {
+        val nodes = resolveNodes()
+        if (nodes.isEmpty()) {
+            Log.w(TAG, "No connected node for $label")
+            return
+        }
+        nodes.forEach { node ->
+            try {
+                messageClient.sendMessage(node.id, path, payload).await()
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to send $label", e)
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(context, "Failed to send $label: ${e.message}", Toast.LENGTH_SHORT).show()
                 }
             }
         }
     }
 
+    fun sendResponse(message: String) {
+        CoroutineScope(Dispatchers.IO).launch {
+            sendToNodes(Protocol.PATH_INTERVENTION_RESPONSE, message.toByteArray(), "response")
+        }
+    }
+
     fun sendWatchData(batch: WatchDataBatch) {
         CoroutineScope(Dispatchers.IO).launch {
-            val node = resolveNode()
-            node?.let {
-                try {
-                    val json = Json.encodeToString(batch)
-                    messageClient.sendMessage(it.id, Protocol.PATH_WATCH_DATA, json.toByteArray()).await()
-                    Log.d("WearMessageSender", "Sent watch data batch: ${batch.snapshots.size} snapshots")
-                } catch (e: Exception) {
-                    Log.e("WearMessageSender", "Failed to send watch data", e)
-                    cachedNode = null
-                }
+            try {
+                val json = Json.encodeToString(batch)
+                sendToNodes(Protocol.PATH_WATCH_DATA, json.toByteArray(), "watch data")
+                Log.d(TAG, "Sent watch data batch: ${batch.snapshots.size} snapshots")
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to send watch data", e)
             }
+        }
+    }
+
+    fun sendPong(message: String) {
+        CoroutineScope(Dispatchers.IO).launch {
+            sendToNodes(Protocol.PATH_PONG, message.toByteArray(), "pong")
         }
     }
 }

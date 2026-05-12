@@ -17,6 +17,7 @@ import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
 import kotlinx.serialization.json.Json
+import java.net.BindException
 import java.time.Duration
 import kotlin.time.toKotlinDuration
 
@@ -26,24 +27,34 @@ class KtorServer(private val context: Context) {
 
     fun start() {
         if (server != null) return
-        server = embeddedServer(Netty, port = Protocol.HTTP_PORT) {
-            install(ContentNegotiation) {
-                json(Json { ignoreUnknownKeys = true })
+        try {
+            server = embeddedServer(Netty, port = Protocol.HTTP_PORT) {
+                install(ContentNegotiation) {
+                    json(Json { ignoreUnknownKeys = true })
+                }
+                install(WebSockets) {
+                    pingPeriod = Duration.ofSeconds(15).toKotlinDuration()
+                    timeout = Duration.ofSeconds(30).toKotlinDuration()
+                }
+                routing {
+                    triggerRoute(context)
+                    statusRoute()
+                    dataRoute()
+                    participantRoute()
+                    triviaRoute()
+                    streamRoute()
+                }
+            }.start(wait = false)
+            Log.d("KtorServer", "HTTP server started on port ${Protocol.HTTP_PORT}")
+        } catch (e: Exception) {
+            server = null
+            val message = if (e is BindException) {
+                "HTTP server not started: port ${Protocol.HTTP_PORT} already in use"
+            } else {
+                "HTTP server failed to start: ${e.message}"
             }
-            install(WebSockets) {
-                pingPeriod = Duration.ofSeconds(15).toKotlinDuration()
-                timeout = Duration.ofSeconds(30).toKotlinDuration()
-            }
-            routing {
-                triggerRoute(context)
-                statusRoute()
-                dataRoute()
-                participantRoute()
-                triviaRoute()
-                streamRoute()
-            }
-        }.start(wait = false)
-        Log.d("KtorServer", "HTTP server started on port ${Protocol.HTTP_PORT}")
+            Log.e("KtorServer", message, e)
+        }
     }
 
     fun stop() {

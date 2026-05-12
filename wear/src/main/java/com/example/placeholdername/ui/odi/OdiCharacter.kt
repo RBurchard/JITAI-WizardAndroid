@@ -1,9 +1,19 @@
-package com.BWPStudio.JITAIWizard.ui.odi
+package com.example.jitaicompanion.ui.odi
 
-import androidx.compose.animation.core.*
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.repeatable
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.size
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -14,8 +24,14 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
-import kotlin.math.PI
 import kotlin.random.Random
+
+enum class OdiAnimationState {
+    IDLE,
+    TALKING,
+    THINKING,
+    CELEBRATING
+}
 
 private val odiBlue = Color(0xFF1565C0)
 private val odiAccent = Color(0xFF42A5F5)
@@ -25,7 +41,7 @@ private val pupilColor = Color.White
 fun OdiCharacter(
     state: OdiAnimationState,
     modifier: Modifier = Modifier,
-    size: Dp = 180.dp
+    size: Dp = 140.dp
 ) {
     var blinkProgress by remember { mutableStateOf(1f) }
     val talkProgress by animateFloatAsState(
@@ -45,7 +61,6 @@ fun OdiCharacter(
         animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy)
     )
 
-    // Random blink loop
     LaunchedEffect(Unit) {
         while (true) {
             delay(Random.nextLong(3000, 5500))
@@ -77,7 +92,6 @@ private fun DrawScope.drawOEye(cx: Float, cy: Float, radius: Float) {
 }
 
 private fun DrawScope.drawDEye(cx: Float, cy: Float, radius: Float) {
-    // D-shape: flat left side, curved right
     drawArc(
         color = odiBlue,
         startAngle = -90f,
@@ -87,7 +101,6 @@ private fun DrawScope.drawDEye(cx: Float, cy: Float, radius: Float) {
         topLeft = Offset(cx - radius, cy - radius),
         size = Size(radius * 2, radius * 2)
     )
-    // Flat line on left
     drawLine(color = odiBlue, start = Offset(cx, cy - radius), end = Offset(cx, cy + radius), strokeWidth = radius * 0.22f)
     drawCircle(color = pupilColor, radius = radius * 0.35f, center = Offset(cx + radius * 0.15f, cy))
     drawCircle(color = odiAccent, radius = radius * 0.15f, center = Offset(cx + radius * 0.05f, cy - radius * 0.12f))

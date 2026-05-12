@@ -5,102 +5,98 @@
 
 package com.example.jitaicompanion.presentation
 
+import android.Manifest
+import android.content.Intent
 import android.os.Bundle
+import android.content.pm.PackageManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
-import androidx.wear.compose.foundation.lazy.TransformingLazyColumn
-import androidx.wear.compose.foundation.lazy.rememberTransformingLazyColumnState
 import androidx.wear.compose.material3.AppScaffold
-import androidx.wear.compose.material3.Button
-import androidx.wear.compose.material3.ButtonDefaults
-import androidx.wear.compose.material3.EdgeButton
-import androidx.wear.compose.material3.ListHeader
 import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.ScreenScaffold
-import androidx.wear.compose.material3.SurfaceTransformation
 import androidx.wear.compose.material3.Text
-import androidx.wear.compose.material3.lazy.rememberTransformationSpec
-import androidx.wear.compose.material3.lazy.transformedHeight
 import androidx.wear.compose.ui.tooling.preview.WearPreviewDevices
 import androidx.wear.compose.ui.tooling.preview.WearPreviewFontScales
-import com.example.jitaicompanion.R
 import com.example.jitaicompanion.presentation.theme.JitaiCompanionTheme
+import com.example.jitaicompanion.service.WatchDataService
+import com.example.jitaicompanion.ui.odi.OdiAnimationState
+import com.example.jitaicompanion.ui.odi.OdiCharacter
+import androidx.compose.ui.unit.dp
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 
 class MainActivity : ComponentActivity() {
+    companion object {
+        private const val PERMISSION_REQUEST_CODE = 1101
+    }
+
+    private val requiredPermissions: Array<String> = arrayOf(
+        Manifest.permission.BODY_SENSORS,
+        Manifest.permission.ACTIVITY_RECOGNITION,
+        Manifest.permission.POST_NOTIFICATIONS
+    )
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        ensureWatchPermissions()
+        startWatchDataServiceIfAllowed()
         setContent {
-            WearApp("Android")
+            WearApp()
         }
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == PERMISSION_REQUEST_CODE) {
+            startWatchDataServiceIfAllowed()
+        }
+    }
+
+    private fun ensureWatchPermissions() {
+        if (hasRequiredPermissions()) return
+        ActivityCompat.requestPermissions(this, requiredPermissions, PERMISSION_REQUEST_CODE)
+    }
+
+    private fun hasRequiredPermissions(): Boolean =
+        requiredPermissions.all {
+            ContextCompat.checkSelfPermission(this, it) == PackageManager.PERMISSION_GRANTED
+        }
+
+    private fun startWatchDataServiceIfAllowed() {
+        if (!hasRequiredPermissions()) return
+        val intent = Intent(this, WatchDataService::class.java).apply {
+            putExtra("sessionId", "")
+        }
+        ContextCompat.startForegroundService(this, intent)
     }
 }
 
 @Composable
-fun WearApp(greetingName: String) {
+fun WearApp() {
     JitaiCompanionTheme {
         AppScaffold {
-            val listState = rememberTransformingLazyColumnState()
-            val transformationSpec = rememberTransformationSpec()
             ScreenScaffold(
-                scrollState = listState,
-                edgeButton = {
-                    EdgeButton(
-                        onClick = { /*TODO*/ },
-                        colors =
-                            ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                                contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                            ),
-                    ) {
-                        Text("More")
+            ) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+                        OdiCharacter(state = OdiAnimationState.IDLE)
+                        Spacer(Modifier.height(8.dp))
+                        Text(text = "Hi, I'm Odi", style = MaterialTheme.typography.titleMedium)
+                        Text(text = "Ready to help you", style = MaterialTheme.typography.bodySmall)
                     }
-                },
-            ) { contentPadding -> // ScreenScaffold provides default padding; adjust as needed
-                TransformingLazyColumn(contentPadding = contentPadding, state = listState) {
-                    item {
-                        ListHeader(
-                            modifier =
-                                Modifier.fillMaxWidth().transformedHeight(this, transformationSpec),
-                            transformation = SurfaceTransformation(transformationSpec),
-                        ) {
-                            Text(text = stringResource(R.string.hello_world, greetingName))
-                        }
-                    }
-                    item {
-                        Button(
-                            onClick = { /*TODO*/ },
-                            modifier = Modifier.fillMaxWidth()
-                                .transformedHeight(this, transformationSpec),
-                            transformation = SurfaceTransformation(transformationSpec),
-                        ) {
-                            Text("Button A")
-                        }
-                    }
-                    item {
-                        Button(
-                            onClick = { /*TODO*/ },
-                            modifier = Modifier.fillMaxWidth()
-                                .transformedHeight(this, transformationSpec),
-                            transformation = SurfaceTransformation(transformationSpec),
-                        ) {
-                            Text("Button B")
-                        }
-                    }
-                    item {
-                        Button(
-                            onClick = { /*TODO*/ },
-                            modifier = Modifier.fillMaxWidth()
-                                .transformedHeight(this, transformationSpec),
-                            transformation = SurfaceTransformation(transformationSpec),
-                        ) {
-                            Text("Button C")
-                        }
-                    }
-
                 }
             }
         }
@@ -111,5 +107,5 @@ fun WearApp(greetingName: String) {
 @WearPreviewFontScales
 @Composable
 fun DefaultPreview() {
-    WearApp("Preview Android")
+    WearApp()
 }

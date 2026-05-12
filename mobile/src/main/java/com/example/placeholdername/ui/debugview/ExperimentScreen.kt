@@ -36,7 +36,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.example.jitaicompanion.convention.models.Intervention
 import com.example.jitaicompanion.convention.models.NotificationType
-import com.BWPStudio.JITAIWizard.OcdWizardApp
+import com.BWPStudio.JITAIWizard.JITAIWizardApp
 import com.BWPStudio.JITAIWizard.experiment.Event
 import com.BWPStudio.JITAIWizard.experiment.LogEvent
 import com.BWPStudio.JITAIWizard.ui.components.StringOptionDropdown
@@ -51,7 +51,7 @@ import java.time.format.DateTimeFormatter
 import java.util.UUID
 
 @Composable
-fun ExperimentScreen() {
+fun ExperimentScreen(onWearError: (String) -> Unit = {}) {
     var list by remember {
         mutableStateOf(listOf(
             Event("1", 30f, "Example Event A",
@@ -92,7 +92,7 @@ fun ExperimentScreen() {
         if (running) { elapsedSeconds = 0; while (running) { delay(1000); elapsedSeconds++ } }
     }
 
-    val logger = (context.applicationContext as OcdWizardApp).logger
+    val logger = (context.applicationContext as JITAIWizardApp).logger
     val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH-mm-ss.SSS")
 
     Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
@@ -252,7 +252,7 @@ fun ExperimentScreen() {
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                     IconButton(onClick = {
                                         interventionSent = true
-                                        sendIntervention(context, intervention)
+                                        sendIntervention(context, intervention, onWearError)
                                         logger.log(LogEvent(eventType = "Intervention", value = "start", details = intervention.message))
                                     }, modifier = Modifier.size(32.dp), enabled = !interventionSent) { Icon(Icons.AutoMirrored.Filled.Send, "Send") }
                                     Text("Intervention", fontSize = 10.sp)
@@ -281,9 +281,9 @@ fun ExperimentScreen() {
     }
 }
 
-private fun sendIntervention(context: android.content.Context, intervention: Intervention) {
+private fun sendIntervention(context: android.content.Context, intervention: Intervention, onWearError: (String) -> Unit) {
     val json = Json.encodeToString(intervention)
-    com.BWPStudio.JITAIWizard.datalayer.WearMessageSender(context).sendIntervention(json)
+    com.BWPStudio.JITAIWizard.datalayer.WearMessageSender(context).sendIntervention(json, onError = onWearError)
 }
 
 @Composable

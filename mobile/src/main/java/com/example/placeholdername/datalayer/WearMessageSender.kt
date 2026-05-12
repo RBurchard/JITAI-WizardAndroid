@@ -3,7 +3,9 @@ package com.BWPStudio.JITAIWizard.datalayer
 import android.content.Context
 import android.util.Log
 import android.widget.Toast
+import com.BWPStudio.JITAIWizard.JITAIWizardApp
 import com.example.jitaicompanion.convention.Protocol
+import com.google.android.gms.wearable.CapabilityClient
 import com.google.android.gms.wearable.MessageClient
 import com.google.android.gms.wearable.Node
 import com.google.android.gms.wearable.Wearable
@@ -15,33 +17,193 @@ import kotlinx.coroutines.withContext
 
 class WearMessageSender(private val context: Context) {
 
-    private val messageClient: MessageClient = Wearable.getMessageClient(context)
-    private val nodeClient = Wearable.getNodeClient(context)
-    private var cachedNode: Node? = null
-
-    private suspend fun resolveNode(): Node? {
-        if (cachedNode != null) return cachedNode
-        val nodes = nodeClient.connectedNodes.await()
-        cachedNode = nodes.firstOrNull()
-        return cachedNode
+    companion object {
+        private const val TAG = "WearMessageSender"
+        private const val NO_WEAR_MESSAGE = "No WearOS can be found to send the message to! Make sure one is connected to the device and Bluetooth + Internet is on!"
     }
 
-    fun sendIntervention(message: String) {
+    private val messageClient: MessageClient = Wearable.getMessageClient(context)
+    private val nodeClient = Wearable.getNodeClient(context)
+    private val capabilityClient = Wearable.getCapabilityClient(context)
+    private val syncLogger = (context.applicationContext as? JITAIWizardApp)?.wearSyncLogger
+
+    private suspend fun resolveNodes(): List<Node> {
+        // Try capability-based discovery first — more reliable on Wear OS 4/5 because
+        // it filters to nodes that have the watch app actually installed.
+        return try {
+            val capNodes = capabilityClient
+                .getCapability("jitai_wizard_wear", CapabilityClient.FILTER_REACHABLE)
+                .await()
+                .nodes
+            if (capNodes.isNotEmpty()) {
+                Log.d(TAG, "Resolved ${capNodes.size} node(s) via capability")
+                capNodes.toList()
+            } else {
+                // Fallback: all directly connected nodes (catches watches without capability
+                // declared yet, e.g. first run before Data Layer re-syncs)
+                val allNodes = nodeClient.connectedNodes.await()
+                Log.d(TAG, "Capability returned 0 nodes, fallback to connectedNodes: ${allNodes.size}")
+                allNodes
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "CapabilityClient failed, falling back to connectedNodes: ${e.message}")
+            nodeClient.connectedNodes.await()
+        }
+    }
+
+    fun sendIntervention(message: String, onError: ((String) -> Unit)? = null) {
         CoroutineScope(Dispatchers.IO).launch {
-            val node = resolveNode()
-            node?.let {
+            val payload = message.toByteArray()
+            val nodes = try {
+                resolveNodes()
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to resolve connected nodes", e)
+                syncLogger?.log(
+                    eventType = "wear_send",
+                    value = "intervention_failed",
+                    path = Protocol.PATH_INTERVENTION,
+                    payloadBytes = payload.size,
+                    details = "resolve_node_failed: ${e.message}"
+                )
+                reportError(buildFailureMessage("Failed to reach watch", e), onError)
+                return@launch
+            }
+
+            if (nodes.isEmpty()) {
+                syncLogger?.log(
+                    eventType = "wear_send",
+                    value = "intervention_failed",
+                    path = Protocol.PATH_INTERVENTION,
+                    payloadBytes = payload.size,
+                    details = "no_connected_node"
+                )
+                reportError(NO_WEAR_MESSAGE, onError)
+                return@launch
+            }
+
+            val nodeIds = nodes.joinToString(",") { it.id }
+            syncLogger?.log(
+                eventType = "wear_send",
+                value = "intervention_nodes",
+                path = Protocol.PATH_INTERVENTION,
+                details = "count=${nodes.size}; ids=$nodeIds"
+            )
+
+            var failures = 0
+            nodes.forEach { node ->
                 try {
-                    messageClient.sendMessage(it.id, Protocol.PATH_INTERVENTION, message.toByteArray()).await()
-                    Log.d("WearMessageSender", "Intervention sent")
+                    messageClient.sendMessage(node.id, Protocol.PATH_INTERVENTION, payload).await()
+                    syncLogger?.log(
+                        eventType = "wear_send",
+                        value = "intervention_success",
+                        path = Protocol.PATH_INTERVENTION,
+                        nodeId = node.id,
+                        payloadBytes = payload.size
+                    )
                 } catch (e: Exception) {
-                    Log.e("WearMessageSender", "Failed to send intervention", e)
-                    cachedNode = null
-                    withContext(Dispatchers.Main) {
-                        Toast.makeText(context, "Failed to reach watch: ${e.message}", Toast.LENGTH_SHORT).show()
-                    }
+                    failures++
+                    Log.e(TAG, "Failed to send intervention", e)
+                    syncLogger?.log(
+                        eventType = "wear_send",
+                        value = "intervention_failed",
+                        path = Protocol.PATH_INTERVENTION,
+                        nodeId = node.id,
+                        payloadBytes = payload.size,
+                        details = e.message ?: "unknown_error"
+                    )
                 }
-            } ?: withContext(Dispatchers.Main) {
-                Toast.makeText(context, "No watch connected", Toast.LENGTH_SHORT).show()
+            }
+
+            if (failures == nodes.size) {
+                reportError("Failed to send intervention to any connected node", onError)
+            } else {
+                Log.d(TAG, "Intervention sent to ${nodes.size - failures}/${nodes.size} nodes")
+            }
+        }
+    }
+
+    fun sendPing(onError: ((String) -> Unit)? = null) {
+        CoroutineScope(Dispatchers.IO).launch {
+            val payload = "ping:${System.currentTimeMillis()}".toByteArray()
+            val nodes = try {
+                resolveNodes()
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to resolve connected nodes", e)
+                syncLogger?.log(
+                    eventType = "wear_send",
+                    value = "ping_failed",
+                    path = Protocol.PATH_PING,
+                    payloadBytes = payload.size,
+                    details = "resolve_node_failed: ${e.message}"
+                )
+                reportError(buildFailureMessage("Failed to reach watch", e), onError)
+                return@launch
+            }
+
+            if (nodes.isEmpty()) {
+                syncLogger?.log(
+                    eventType = "wear_send",
+                    value = "ping_failed",
+                    path = Protocol.PATH_PING,
+                    payloadBytes = payload.size,
+                    details = "no_connected_node"
+                )
+                reportError(NO_WEAR_MESSAGE, onError)
+                return@launch
+            }
+
+            val nodeIds = nodes.joinToString(",") { it.id }
+            syncLogger?.log(
+                eventType = "wear_send",
+                value = "ping_nodes",
+                path = Protocol.PATH_PING,
+                details = "count=${nodes.size}; ids=$nodeIds"
+            )
+
+            var failures = 0
+            nodes.forEach { node ->
+                try {
+                    messageClient.sendMessage(node.id, Protocol.PATH_PING, payload).await()
+                    syncLogger?.log(
+                        eventType = "wear_send",
+                        value = "ping_success",
+                        path = Protocol.PATH_PING,
+                        nodeId = node.id,
+                        payloadBytes = payload.size
+                    )
+                } catch (e: Exception) {
+                    failures++
+                    Log.e(TAG, "Failed to send ping", e)
+                    syncLogger?.log(
+                        eventType = "wear_send",
+                        value = "ping_failed",
+                        path = Protocol.PATH_PING,
+                        nodeId = node.id,
+                        payloadBytes = payload.size,
+                        details = e.message ?: "unknown_error"
+                    )
+                }
+            }
+
+            if (failures == nodes.size) {
+                reportError("Failed to ping any connected node", onError)
+            } else {
+                Log.d(TAG, "Ping sent to ${nodes.size - failures}/${nodes.size} nodes")
+            }
+        }
+    }
+
+    private fun buildFailureMessage(prefix: String, error: Exception): String {
+        val reason = error.message?.takeIf { it.isNotBlank() } ?: "unknown error"
+        return "$prefix: $reason"
+    }
+
+    private suspend fun reportError(message: String, onError: ((String) -> Unit)?) {
+        withContext(Dispatchers.Main) {
+            if (onError != null) {
+                onError(message)
+            } else {
+                Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
             }
         }
     }

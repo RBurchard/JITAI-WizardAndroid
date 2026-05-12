@@ -16,6 +16,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.Text
+import com.example.jitaicompanion.ui.odi.OdiAnimationState
+import com.example.jitaicompanion.ui.odi.OdiCharacter
 import kotlinx.coroutines.delay
 
 class PositiveFeedbackActivity : ComponentActivity() {
@@ -55,14 +57,10 @@ class PositiveFeedbackActivity : ComponentActivity() {
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center
                     ) {
+                        OdiCharacter(state = OdiAnimationState.CELEBRATING)
+                        Spacer(Modifier.height(6.dp))
                         Text(
-                            text = "★",
-                            fontSize = 32.sp,
-                            color = Color(0xFFFFD700)
-                        )
-                        Spacer(Modifier.height(8.dp))
-                        Text(
-                            text = message,
+                            text = "Odi says: $message",
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.White,

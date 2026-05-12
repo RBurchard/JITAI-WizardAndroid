@@ -7,9 +7,28 @@ import android.os.Vibrator
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import androidx.wear.compose.material3.Button
+import androidx.wear.compose.material3.MaterialTheme
+import androidx.wear.compose.material3.Text
 import com.example.jitaicompanion.datalayer.WearMessageSender
+import com.example.jitaicompanion.ui.odi.OdiAnimationState
+import com.example.jitaicompanion.ui.odi.OdiCharacter
 import com.example.jitaicompanion.ui.PositiveFeedbackActivity
+import kotlinx.coroutines.delay
 
 abstract class MicrogameActivity : ComponentActivity() {
 
@@ -18,6 +37,7 @@ abstract class MicrogameActivity : ComponentActivity() {
     private var isCompleted = false
 
     abstract val timeoutSeconds: Int
+    open val tutorialText: String = "Quick tip: follow the instructions."
 
     @Composable
     abstract fun GameContent()
@@ -31,7 +51,40 @@ abstract class MicrogameActivity : ComponentActivity() {
         setTurnScreenOn(true)
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
-        setContent { GameContent() }
+        setContent { GameWithTutorial() }
+    }
+
+    @Composable
+    private fun GameWithTutorial() {
+        var showTutorial by remember { mutableStateOf(true) }
+
+        LaunchedEffect(Unit) {
+            delay(2000L)
+            showTutorial = false
+        }
+
+        if (showTutorial) {
+            OdiTutorialScreen(message = tutorialText) { showTutorial = false }
+        } else {
+            GameContent()
+        }
+    }
+
+    @Composable
+    private fun OdiTutorialScreen(message: String, onStart: () -> Unit) {
+        MaterialTheme {
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                OdiCharacter(state = OdiAnimationState.TALKING)
+                Spacer(Modifier.height(6.dp))
+                Text(text = message, style = MaterialTheme.typography.bodyMedium)
+                Spacer(Modifier.height(8.dp))
+                Button(onClick = onStart) { Text("Start") }
+            }
+        }
     }
 
     protected fun onGameComplete(response: String) {
