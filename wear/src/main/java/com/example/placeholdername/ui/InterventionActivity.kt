@@ -1,5 +1,7 @@
 package com.example.jitaicompanion.ui
 
+import android.media.Ringtone
+import android.media.RingtoneManager
 import android.os.Bundle
 import android.os.VibrationEffect
 import android.os.Vibrator
@@ -42,11 +44,14 @@ class InterventionActivity : ComponentActivity() {
     }
 
     private lateinit var vibrator: Vibrator
+    private var ringtone: Ringtone? = null
 
     override fun onDestroy() {
         super.onDestroy()
         if (currentInstance === this) currentInstance = null
         vibrator.cancel()
+        ringtone?.stop()
+        ringtone = null
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -87,6 +92,7 @@ class InterventionActivity : ComponentActivity() {
     }
 
     private fun applyVibration(type: NotificationType) {
+        // Vibration
         when (type) {
             NotificationType.VIBRATION1, NotificationType.VIBRATION_SOUND ->
                 vibrator.vibrate(VibrationEffect.createWaveform(longArrayOf(0, 200, 100, 200, 100, 400), -1))
@@ -94,6 +100,21 @@ class InterventionActivity : ComponentActivity() {
                 vibrator.vibrate(VibrationEffect.createWaveform(longArrayOf(0, 400, 100, 400, 100, 400, 100, 400, 100, 400, 100, 400), -1))
             NotificationType.ANNOY_VIB, NotificationType.ANNOY_VIBRATION_SOUND ->
                 vibrator.vibrate(VibrationEffect.createWaveform(longArrayOf(0, 400, 100, 400), 0))
+            else -> {}
+        }
+        // Sound
+        when (type) {
+            NotificationType.SOUND, NotificationType.VIBRATION_SOUND, NotificationType.VIBRATION_SOUND2 -> {
+                val uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+                ringtone = RingtoneManager.getRingtone(this, uri)?.also { it.play() }
+            }
+            NotificationType.ANNOY_SOUND, NotificationType.ANNOY_VIBRATION_SOUND -> {
+                val uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
+                ringtone = RingtoneManager.getRingtone(this, uri)?.also {
+                    it.isLooping = true
+                    it.play()
+                }
+            }
             else -> {}
         }
     }

@@ -40,6 +40,9 @@ class WatchDataService : Service(), SensorEventListener {
     private var sessionId = ""
     private var latestHeartRate = 0f
     private var latestStepCount = 0
+    private var latestAccelX = 0f
+    private var latestAccelY = 0f
+    private var latestAccelZ = 0f
     private var latestGyroX = 0f
     private var latestGyroY = 0f
     private var latestGyroZ = 0f
@@ -94,7 +97,15 @@ class WatchDataService : Service(), SensorEventListener {
 
     override fun onSensorChanged(event: SensorEvent) {
         when (event.sensor.type) {
-            Sensor.TYPE_HEART_RATE -> latestHeartRate = event.values[0]
+            Sensor.TYPE_HEART_RATE -> {
+                val hr = event.values[0]
+                if (hr > 0f) {
+                    latestHeartRate = hr
+                    // Snapshot on every heart rate reading so BPM is never lost
+                    // even when the user is still and accelerometer isn't firing.
+                    snapshotBuffer.add(buildSnapshot())
+                }
+            }
             Sensor.TYPE_STEP_COUNTER -> latestStepCount = event.values[0].toInt()
             Sensor.TYPE_GYROSCOPE -> {
                 latestGyroX = event.values[0]
@@ -110,29 +121,32 @@ class WatchDataService : Service(), SensorEventListener {
             Sensor.TYPE_PRESSURE -> latestBarometer = event.values[0]
             Sensor.TYPE_LIGHT -> latestLight = event.values[0]
             Sensor.TYPE_ACCELEROMETER -> {
-                snapshotBuffer.add(
-                    WatchDataSnapshot(
-                        timestamp = System.currentTimeMillis(),
-                        heartRate = latestHeartRate,
-                        accelX = event.values[0],
-                        accelY = event.values[1],
-                        accelZ = event.values[2],
-                        gyroX = latestGyroX,
-                        gyroY = latestGyroY,
-                        gyroZ = latestGyroZ,
-                        rotationX = latestRotationX,
-                        rotationY = latestRotationY,
-                        rotationZ = latestRotationZ,
-                        rotationW = latestRotationW,
-                        barometer = latestBarometer,
-                        light = latestLight,
-                        stepCount = latestStepCount,
-                        sessionId = sessionId
-                    )
-                )
+                latestAccelX = event.values[0]
+                latestAccelY = event.values[1]
+                latestAccelZ = event.values[2]
+                snapshotBuffer.add(buildSnapshot())
             }
         }
     }
+
+    private fun buildSnapshot() = WatchDataSnapshot(
+        timestamp = System.currentTimeMillis(),
+        heartRate = latestHeartRate,
+        accelX = latestAccelX,
+        accelY = latestAccelY,
+        accelZ = latestAccelZ,
+        gyroX = latestGyroX,
+        gyroY = latestGyroY,
+        gyroZ = latestGyroZ,
+        rotationX = latestRotationX,
+        rotationY = latestRotationY,
+        rotationZ = latestRotationZ,
+        rotationW = latestRotationW,
+        barometer = latestBarometer,
+        light = latestLight,
+        stepCount = latestStepCount,
+        sessionId = sessionId
+    )
 
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
 
