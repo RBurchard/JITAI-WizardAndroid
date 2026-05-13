@@ -27,7 +27,7 @@ class WatchDataService : Service(), SensorEventListener {
         private const val TAG = "WatchDataService"
         private const val CHANNEL_ID = "watch_data_channel"
         private const val NOTIFICATION_ID = 1001
-        private const val BATCH_INTERVAL_MS = 5000L
+        private const val BATCH_INTERVAL_MS = 1000L
 
         @Volatile
         var isRunning = false
@@ -63,9 +63,15 @@ class WatchDataService : Service(), SensorEventListener {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        isRunning = true
         sessionId = intent?.getStringExtra("sessionId") ?: ""
-        startForeground(NOTIFICATION_ID, buildNotification())
+        try {
+            startForeground(NOTIFICATION_ID, buildNotification())
+        } catch (e: Exception) {
+            Log.e(TAG, "startForeground failed — likely missing BODY_SENSORS permission", e)
+            stopSelf()
+            return START_NOT_STICKY
+        }
+        isRunning = true
         registerSensors()
         startBatchLoop()
         return START_STICKY

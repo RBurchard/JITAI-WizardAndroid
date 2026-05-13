@@ -1,6 +1,8 @@
 package com.example.jitaicompanion.datalayer
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
@@ -34,6 +36,13 @@ class WearMessageListener : WearableListenerService() {
     }
 
     private fun ensureDataServiceRunning() {
+        val hasBodySensors = ContextCompat.checkSelfPermission(
+            applicationContext, Manifest.permission.BODY_SENSORS
+        ) == PackageManager.PERMISSION_GRANTED
+        if (!hasBodySensors) {
+            Log.w("WearMessageListener", "BODY_SENSORS not granted — cannot start WatchDataService")
+            return
+        }
         if (!WatchDataService.isRunning) {
             ContextCompat.startForegroundService(
                 applicationContext,

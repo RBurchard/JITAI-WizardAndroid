@@ -7,6 +7,7 @@ package com.example.jitaicompanion.presentation
 
 import android.Manifest
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import android.content.pm.PackageManager
 import androidx.activity.ComponentActivity
@@ -39,11 +40,14 @@ class MainActivity : ComponentActivity() {
         private const val PERMISSION_REQUEST_CODE = 1101
     }
 
-    private val requiredPermissions: Array<String> = arrayOf(
-        Manifest.permission.BODY_SENSORS,
-        Manifest.permission.ACTIVITY_RECOGNITION,
-        Manifest.permission.POST_NOTIFICATIONS
-    )
+    private val requiredPermissions: Array<String> = buildList {
+        add(Manifest.permission.BODY_SENSORS)
+        add(Manifest.permission.ACTIVITY_RECOGNITION)
+        add(Manifest.permission.POST_NOTIFICATIONS)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            add(Manifest.permission.BODY_SENSORS_BACKGROUND)
+        }
+    }.toTypedArray()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

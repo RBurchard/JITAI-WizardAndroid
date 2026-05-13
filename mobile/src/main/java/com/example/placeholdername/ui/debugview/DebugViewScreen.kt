@@ -11,7 +11,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.BWPStudio.JITAIWizard.datalayer.WearMessageSender
 import com.BWPStudio.JITAIWizard.server.ServerState
-import com.google.android.gms.wearable.CapabilityClient
 import com.google.android.gms.wearable.Node
 import com.google.android.gms.wearable.Wearable
 import kotlinx.coroutines.delay
@@ -79,12 +78,7 @@ private fun WatchStatusBar() {
     LaunchedEffect(Unit) {
         while (true) {
             watchNodes = try {
-                // FILTER_REACHABLE tests the live connection — no stale cache
-                Wearable.getCapabilityClient(context)
-                    .getCapability("jitai_wizard_wear", CapabilityClient.FILTER_REACHABLE)
-                    .await()
-                    .nodes
-                    .toList()
+                Wearable.getNodeClient(context).connectedNodes.await().toList()
             } catch (_: Exception) {
                 emptyList()
             }

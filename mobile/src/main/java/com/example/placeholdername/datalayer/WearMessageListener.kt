@@ -24,6 +24,11 @@ class WearMessageListener : WearableListenerService() {
     private val syncLogger by lazy { (application as JITAIWizardApp).wearSyncLogger }
     private val nodeClient by lazy { Wearable.getNodeClient(this) }
 
+    override fun onCreate() {
+        super.onCreate()
+        refreshConnection("startup")
+    }
+
     override fun onMessageReceived(event: MessageEvent) {
         when (event.path) {
             Protocol.PATH_INTERVENTION_RESPONSE -> handleResponse(String(event.data))

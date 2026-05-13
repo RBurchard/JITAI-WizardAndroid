@@ -1,15 +1,19 @@
 package com.BWPStudio.JITAIWizard.ui.userview
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.BWPStudio.JITAIWizard.datalayer.WatchDataRelay
+import com.BWPStudio.JITAIWizard.datalayer.WearMessageSender
 import com.BWPStudio.JITAIWizard.server.ServerState
 import com.BWPStudio.JITAIWizard.ui.odi.OdiAnimationState
+import com.google.android.gms.wearable.Wearable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 
 data class UserViewUiState(
     val odiState: OdiAnimationState = OdiAnimationState.IDLE,
@@ -21,10 +25,12 @@ data class UserViewUiState(
     val watchConnected: Boolean = false
 )
 
-class UserViewModel : ViewModel() {
+class UserViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _uiState = MutableStateFlow(UserViewUiState())
     val uiState = _uiState.asStateFlow()
+
+    private var _wasPreviouslyConnected = false
 
     init {
         viewModelScope.launch {
@@ -40,9 +46,29 @@ class UserViewModel : ViewModel() {
                     it.copy(
                         sessionElapsedMs = ServerState.uptime,
                         lastReactionTimeMs = ServerState.lastReactionTimeMs.takeIf { v -> v > 0 },
-                        lastAction = ServerState.lastAction
+                        lastAction = ServerState.lastAction,
+                        watchConnected = ServerState.watchConnected
                     )
                 }
+            }
+        }
+        viewModelScope.launch {
+            while (true) {
+                val connected = try {
+                    Wearable.getNodeClient(getApplication<Application>()).connectedNodes.await().isNotEmpty()
+                } catch (_: Exception) { false }
+
+                ServerState.watchConnected = connected
+                _uiState.update { it.copy(watchConnected = connected) }
+
+                // On first connection detected each session, wake the watch so
+                // WatchDataService starts if the OS had killed it
+                if (connected && !_wasPreviouslyConnected) {
+                    WearMessageSender(getApplication()).sendPing(onError = {})
+                }
+                _wasPreviouslyConnected = connected
+
+                delay(30_000)
             }
         }
     }
