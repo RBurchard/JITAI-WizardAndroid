@@ -5,8 +5,12 @@
 
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.VIBRATE" />
-    <uses-permission android:name="android.permission.BODY_SENSORS" />
-    <uses-permission android:name="android.permission.BODY_SENSORS_BACKGROUND" />
+    <!-- 
+        <uses-permission android:name="android.permission.BODY_SENSORS" />
+        <uses-permission android:name="android.permission.BODY_SENSORS_BACKGROUND" />
+        ! These permissions are not needed or possible to request on Wear OS 4 or higher. I dont want to axe them entirely, incase we do need em later.
+    -->
+    <uses-permission android:name="android.permission.health.READ_HEART_RATE" />
     <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
@@ -21,7 +25,7 @@
 
         <!-- Wearable listener for phone messages -->
         <service
-            android:name=".datalayer.WearMessageListener"
+            android:name="com.example.jitaicompanion.datalayer.WearMessageListener"
             android:exported="true">
             <intent-filter>
                 <action android:name="com.google.android.gms.wearable.MESSAGE_RECEIVED" />
@@ -31,49 +35,49 @@
 
         <!-- Sensor data collection service -->
         <service
-            android:name=".service.WatchDataService"
+            android:name="com.example.jitaicompanion.service.WatchDataService"
             android:exported="false"
             android:foregroundServiceType="health" />
 
         <!-- Intervention display -->
         <activity
-            android:name=".ui.InterventionActivity"
+            android:name="com.example.jitaicompanion.ui.InterventionActivity"
             android:exported="false"
             android:showWhenLocked="true"
             android:turnScreenOn="true" />
 
         <!-- Positive feedback -->
         <activity
-            android:name=".ui.PositiveFeedbackActivity"
+            android:name="com.example.jitaicompanion.ui.PositiveFeedbackActivity"
             android:exported="false"
             android:showWhenLocked="true"
             android:turnScreenOn="true" />
 
         <!-- Microgames -->
         <activity
-            android:name=".ui.games.StandStillGameActivity"
+            android:name="com.example.jitaicompanion.ui.games.StandStillGameActivity"
             android:exported="false"
             android:showWhenLocked="true"
             android:turnScreenOn="true" />
         <activity
-            android:name=".ui.games.TriviaGameActivity"
+            android:name="com.example.jitaicompanion.ui.games.TriviaGameActivity"
             android:exported="false"
             android:showWhenLocked="true"
             android:turnScreenOn="true" />
         <activity
-            android:name=".ui.games.SimonSaysGameActivity"
+            android:name="com.example.jitaicompanion.ui.games.SimonSaysGameActivity"
             android:exported="false"
             android:showWhenLocked="true"
             android:turnScreenOn="true" />
         <activity
-            android:name=".ui.games.LockPickingGameActivity"
+            android:name="com.example.jitaicompanion.ui.games.LockPickingGameActivity"
             android:exported="false"
             android:showWhenLocked="true"
             android:turnScreenOn="true" />
 
         <!-- Existing tile and complication services -->
         <service
-            android:name=".complication.MainComplicationService"
+            android:name="com.example.jitaicompanion.complication.MainComplicationService"
             android:exported="true"
             android:label="@string/complication_label"
             android:permission="com.google.android.wearable.permission.BIND_COMPLICATION_PROVIDER">
@@ -88,7 +92,7 @@
                 android:value="3600" />
         </service>
         <service
-            android:name=".tile.MainTileService"
+            android:name="com.example.jitaicompanion.tile.MainTileService"
             android:exported="true"
             android:label="@string/tile_label"
             android:permission="com.google.android.wearable.permission.BIND_TILE_PROVIDER">
@@ -119,7 +123,7 @@
             android:resource="@xml/wear_app_capabilities" />
 
         <activity
-            android:name=".presentation.MainActivity"
+            android:name="com.example.jitaicompanion.presentation.MainActivity"
             android:exported="true"
             android:taskAffinity=""
             android:theme="@style/MainActivityTheme.Starting">

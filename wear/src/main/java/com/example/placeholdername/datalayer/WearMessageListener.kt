@@ -43,7 +43,7 @@ class WearMessageListener : WearableListenerService() {
             Log.w("WearMessageListener", "BODY_SENSORS not granted — cannot start WatchDataService")
             return
         }
-        if (!WatchDataService.isRunning) {
+        if (!WatchDataService.isRunning.value) {
             ContextCompat.startForegroundService(
                 applicationContext,
                 Intent(applicationContext, WatchDataService::class.java)

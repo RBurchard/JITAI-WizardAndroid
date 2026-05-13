@@ -5,12 +5,21 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
 import android.content.Intent
+import android.content.pm.ServiceInfo
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
+import android.os.Build
 import android.os.IBinder
 import android.util.Log
+import androidx.health.services.client.HealthServices
+import androidx.health.services.client.MeasureCallback
+import androidx.health.services.client.MeasureClient
+import androidx.health.services.client.data.Availability
+import androidx.health.services.client.data.DataPointContainer
+import androidx.health.services.client.data.DataType
+import androidx.health.services.client.data.DeltaDataType
 import com.example.jitaicompanion.convention.models.WatchDataBatch
 import com.example.jitaicompanion.convention.models.WatchDataSnapshot
 import com.example.jitaicompanion.datalayer.WearMessageSender
@@ -18,8 +27,12 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.Executors
 
 class WatchDataService : Service(), SensorEventListener {
 
@@ -29,9 +42,11 @@ class WatchDataService : Service(), SensorEventListener {
         private const val NOTIFICATION_ID = 1001
         private const val BATCH_INTERVAL_MS = 1000L
 
-        @Volatile
-        var isRunning = false
-            private set
+        private val _isRunning = MutableStateFlow(false)
+        val isRunning: StateFlow<Boolean> = _isRunning.asStateFlow()
+
+        private val _heartRateState = MutableStateFlow(0f)
+        val heartRateState: StateFlow<Float> = _heartRateState
     }
 
     private lateinit var sensorManager: SensorManager
@@ -53,38 +68,122 @@ class WatchDataService : Service(), SensorEventListener {
     private var latestBarometer = 0f
     private var latestLight = 0f
     private var batchJob: Job? = null
+    private var sampleJob: Job? = null
     private val serviceScope = CoroutineScope(Dispatchers.IO)
+
+    private val measureExecutor = Executors.newSingleThreadExecutor()
+    private var measureClient: MeasureClient? = null
+
+    private val heartRateMeasureCallback = object : MeasureCallback {
+        override fun onAvailabilityChanged(dataType: DeltaDataType<*, *>, availability: Availability) {
+            Log.d(TAG, "HR availability changed: $availability")
+            // If availability is not AVAILABLE, we might not get data points
+        }
+
+        override fun onDataReceived(data: DataPointContainer) {
+            Log.v(TAG, "onDataReceived: Data received from Health Services")
+            data.getData(DataType.HEART_RATE_BPM).lastOrNull()?.value?.let { bpm ->
+                val hr = bpm.toFloat()
+                Log.d(TAG, "New HR value: $hr bpm")
+                latestHeartRate = hr
+                _heartRateState.value = hr
+                snapshotBuffer.add(buildSnapshot())
+            } ?: Log.w(TAG, "onDataReceived: No HEART_RATE_BPM in container")
+        }
+    }
 
     override fun onCreate() {
         super.onCreate()
+        Log.i(TAG, "onCreate: Service created")
         sensorManager = getSystemService(SensorManager::class.java)
         messageSender = WearMessageSender(this)
         createNotificationChannel()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        Log.i(TAG, "onStartCommand: Intent received, sessionId=${intent?.getStringExtra("sessionId")}")
         sessionId = intent?.getStringExtra("sessionId") ?: ""
+        
+        val isAlreadyRunning = _isRunning.value
+        
         try {
-            startForeground(NOTIFICATION_ID, buildNotification())
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                startForeground(NOTIFICATION_ID, buildNotification(), ServiceInfo.FOREGROUND_SERVICE_TYPE_HEALTH)
+            } else {
+                startForeground(NOTIFICATION_ID, buildNotification())
+            }
         } catch (e: Exception) {
-            Log.e(TAG, "startForeground failed — likely missing BODY_SENSORS permission", e)
+            Log.e(TAG, "startForeground failed", e)
             stopSelf()
             return START_NOT_STICKY
         }
-        isRunning = true
-        registerSensors()
-        startBatchLoop()
+        
+        if (!isAlreadyRunning) {
+            _isRunning.value = true
+            registerSensors()
+            startSamplingLoop()
+            startBatchLoop()
+        } else {
+            Log.d(TAG, "Service already running, skipping sensor registration")
+        }
+
         return START_STICKY
     }
 
+    private fun startSamplingLoop() {
+        sampleJob = serviceScope.launch {
+            while (true) {
+                delay(200L) // UI-friendly update rate
+                _heartRateState.value = latestHeartRate
+            }
+        }
+    }
+
     private fun registerSensors() {
-        registerSensor(Sensor.TYPE_HEART_RATE, SensorManager.SENSOR_DELAY_NORMAL, "heart_rate")
+        Log.i(TAG, "registerSensors: Starting registration for all sensors")
+        
+        // Strategy: Dual-register Heart Rate to ensure we catch the HAL events
+        // 1. Modern Health Services (MeasureClient)
+        registerHeartRateMeasure()
+        
+        // 2. Legacy SensorManager (Standard Android Sensor API)
+        // We do this ALWAYS now, not just as a fallback, because some devices 
+        // publish to the legacy HAL even if MeasureClient claims support.
+        registerLegacyHeartRate()
+
         registerSensor(Sensor.TYPE_ACCELEROMETER, SensorManager.SENSOR_DELAY_GAME, "accelerometer")
         registerSensor(Sensor.TYPE_STEP_COUNTER, SensorManager.SENSOR_DELAY_NORMAL, "step_counter")
         registerSensor(Sensor.TYPE_GYROSCOPE, SensorManager.SENSOR_DELAY_GAME, "gyroscope")
         registerSensor(Sensor.TYPE_ROTATION_VECTOR, SensorManager.SENSOR_DELAY_GAME, "rotation_vector")
         registerSensor(Sensor.TYPE_PRESSURE, SensorManager.SENSOR_DELAY_NORMAL, "barometer")
         registerSensor(Sensor.TYPE_LIGHT, SensorManager.SENSOR_DELAY_NORMAL, "light")
+    }
+
+    private fun registerHeartRateMeasure() {
+        Log.i(TAG, "Attempting to register heart rate measure via Health Services...")
+        val client = HealthServices.getClient(this).measureClient
+        measureClient = client
+
+        serviceScope.launch {
+            try {
+                val capabilities = client.getCapabilitiesAsync().get()
+                val isSupported = DataType.HEART_RATE_BPM in capabilities.supportedDataTypesMeasure
+                Log.d(TAG, "Heart rate supported via Health Services: $isSupported")
+                
+                if (isSupported) {
+                    Log.d(TAG, "Registering MeasureCallback...")
+                    client.registerMeasureCallback(DataType.HEART_RATE_BPM, measureExecutor, heartRateMeasureCallback)
+                    Log.i(TAG, "MeasureCallback registration call completed")
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Health Services capability check/registration failed", e)
+            }
+        }
+    }
+
+    private fun registerLegacyHeartRate() {
+        Log.i(TAG, "Attempting to register legacy Heart Rate sensor via SensorManager...")
+        registerSensor(Sensor.TYPE_HEART_RATE, SensorManager.SENSOR_DELAY_NORMAL, "heart_rate")
     }
 
     private fun registerSensor(type: Int, delay: Int, label: String) {
@@ -102,13 +201,19 @@ class WatchDataService : Service(), SensorEventListener {
     }
 
     override fun onSensorChanged(event: SensorEvent) {
+        if (event.sensor.type == Sensor.TYPE_HEART_RATE) {
+            Log.i(TAG, "onSensorChanged [Legacy HR]: value=${event.values[0]} confidence=${if (event.values.size > 2) event.values[2] else "N/A"}")
+        } else if (event.sensor.type == Sensor.TYPE_ACCELEROMETER) {
+            Log.v(TAG, "onSensorChanged: ${event.sensor.name} value=${event.values[0]}")
+        }
         when (event.sensor.type) {
             Sensor.TYPE_HEART_RATE -> {
+                // Fallback path — only reached when Health Services unavailable
                 val hr = event.values[0]
+                Log.d(TAG, "SensorManager HR: $hr bpm")
                 if (hr > 0f) {
                     latestHeartRate = hr
-                    // Snapshot on every heart rate reading so BPM is never lost
-                    // even when the user is still and accelerometer isn't firing.
+                    _heartRateState.value = hr
                     snapshotBuffer.add(buildSnapshot())
                 }
             }
@@ -130,7 +235,8 @@ class WatchDataService : Service(), SensorEventListener {
                 latestAccelX = event.values[0]
                 latestAccelY = event.values[1]
                 latestAccelZ = event.values[2]
-                snapshotBuffer.add(buildSnapshot())
+                // Do NOT snapshot here — accelerometer fires at ~50–100 Hz and would
+                // overflow the 100 KB Wearable message cap. HR events snapshot instead.
             }
         }
     }
@@ -160,21 +266,33 @@ class WatchDataService : Service(), SensorEventListener {
         batchJob = serviceScope.launch {
             while (true) {
                 delay(BATCH_INTERVAL_MS)
+                // Always include one current-state snapshot so the phone receives data
+                // even when the user is still and no HR event fired this window.
+                snapshotBuffer.add(buildSnapshot())
                 val snapshots = snapshotBuffer.toList()
                 snapshotBuffer.clear()
-                if (snapshots.isNotEmpty()) {
-                    val batch = WatchDataBatch(sessionId = sessionId, snapshots = snapshots)
-                    messageSender.sendWatchData(batch)
-                    Log.d("WatchDataService", "Sent batch of ${snapshots.size} snapshots")
-                }
+                val batch = WatchDataBatch(sessionId = sessionId, snapshots = snapshots)
+                messageSender.sendWatchData(batch)
+                Log.d(TAG, "Sent batch of ${snapshots.size} snapshots, HR=${latestHeartRate}")
             }
         }
     }
 
     override fun onDestroy() {
-        isRunning = false
+        Log.d(TAG, "onDestroy called")
+        _isRunning.value = false
+        _heartRateState.value = 0f
         super.onDestroy()
         batchJob?.cancel()
+        sampleJob?.cancel()
+        measureClient?.let {
+            try {
+                it.unregisterMeasureCallbackAsync(DataType.HEART_RATE_BPM, heartRateMeasureCallback)
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to unregister HR measure callback: ${e.message}")
+            }
+        }
+        measureExecutor.shutdown()
         sensorManager.unregisterListener(this)
     }
 

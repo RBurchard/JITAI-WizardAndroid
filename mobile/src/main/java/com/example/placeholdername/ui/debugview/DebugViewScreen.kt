@@ -104,8 +104,12 @@ private fun WatchStatusBar() {
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Text(statusText, color = statusColor, fontSize = 12.sp, modifier = Modifier.weight(1f))
-            if (bpm > 0f) {
-                Text("${bpm.toInt()} BPM", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            if (watchNodes != null && watchNodes!!.isNotEmpty()) {
+                if (bpm > 0f) {
+                    Text("${bpm.toInt()} BPM", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                } else {
+                    Text("No HR signal", fontSize = 12.sp, color = MaterialTheme.colorScheme.error)
+                }
             }
             if (lastAction.isNotEmpty()) {
                 Text("Last: $lastAction", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant,

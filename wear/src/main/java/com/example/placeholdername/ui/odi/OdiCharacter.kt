@@ -81,7 +81,7 @@ fun OdiCharacter(
 
         drawOEye(leftEyeX, eyeY + thinkOffset * h, openEyeRadius)
         drawDEye(rightEyeX, eyeY + thinkOffset * h, openEyeRadius)
-        drawCMouth(w * 0.5f, h * 0.70f, w * 0.22f, talkProgress, state == OdiAnimationState.CELEBRATING)
+        drawCMouth(w * 0.5f, h * 0.80f, w * 0.22f, talkProgress, state == OdiAnimationState.CELEBRATING)
     }
 }
 

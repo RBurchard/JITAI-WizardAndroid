@@ -43,11 +43,13 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
             while (true) {
                 delay(1000)
                 _uiState.update {
+                    val bpmFromServer = ServerState.lastHeartRate.toInt()
                     it.copy(
                         sessionElapsedMs = ServerState.uptime,
                         lastReactionTimeMs = ServerState.lastReactionTimeMs.takeIf { v -> v > 0 },
                         lastAction = ServerState.lastAction,
-                        watchConnected = ServerState.watchConnected
+                        watchConnected = ServerState.watchConnected,
+                        lastBpm = if (bpmFromServer > 0) bpmFromServer else it.lastBpm
                     )
                 }
             }
