@@ -7,6 +7,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
@@ -14,7 +15,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
-import kotlin.math.PI
+// ...existing code...
 import kotlin.random.Random
 
 private val odiBlue = Color(0xFF1565C0)
@@ -28,6 +29,9 @@ fun OdiCharacter(
     size: Dp = 180.dp
 ) {
     var blinkProgress by remember { mutableStateOf(1f) }
+
+    var irisX by remember { mutableStateOf(0f) }
+
     val talkProgress by animateFloatAsState(
         targetValue = if (state == OdiAnimationState.TALKING) 1f else 0f,
         animationSpec = tween(300)
@@ -44,11 +48,28 @@ fun OdiCharacter(
         targetValue = if (state == OdiAnimationState.CELEBRATING) 1.1f else 1f,
         animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy)
     )
+    val irisOffsetX by animateFloatAsState(
+        targetValue = irisX,
+        animationSpec = tween(300)
+    )
 
     // Random blink loop
     LaunchedEffect(Unit) {
+        val positions = listOf(-0.55f, 0f, 0.55f) // down-left, straight-down, down-right
         while (true) {
-            delay(Random.nextLong(3000, 5500))
+            // pick a different discrete horizontal gaze position
+            var next = positions.random()
+            if (next == irisX) {
+                // if it's the same, try to pick a different one (prefer change)
+                next = positions.filter { it != irisX }.random()
+            }
+            irisX = next
+
+            // shorter, more frequent changes while thinking
+            val wait = if (state == OdiAnimationState.THINKING) Random.nextLong(1200, 2200) else Random.nextLong(3000, 5500)
+            delay(wait)
+
+            // blink
             blinkProgress = 0f
             delay(120)
             blinkProgress = 1f
@@ -64,47 +85,145 @@ fun OdiCharacter(
         val rightEyeX = w * 0.70f
         val openEyeRadius = eyeRadius * blinkProgress.coerceAtLeast(0.05f)
 
-        drawOEye(leftEyeX, eyeY + thinkOffset * h, openEyeRadius)
-        drawDEye(rightEyeX, eyeY + thinkOffset * h, openEyeRadius)
-        drawCMouth(w * 0.5f, h * 0.80f, w * 0.22f, talkProgress, state == OdiAnimationState.CELEBRATING)
+        drawLeftBrow(leftEyeX, eyeY + thinkOffset * h, openEyeRadius, irisX = irisOffsetX)
+        drawRightBrow(rightEyeX, eyeY + thinkOffset * h, openEyeRadius, irisX = irisOffsetX)
+        drawNose(w * 0.50f, h * 0.75f, w * 0.12f)
+        // Hands: expectant/observant, hovering under the UI box
+        drawThreeFingerHand(
+            cx = w * 0.28f,
+            cy = h * 0.82f,
+            handWidth = w * 0.20f,
+            handHeight = h * 0.12f,
+            isLeft = true,
+            openness = 0.5f,
+            tilt = -0.12f,
+        )
+        drawThreeFingerHand(
+            cx = w * 0.72f,
+            cy = h * 0.82f,
+            handWidth = w * 0.20f,
+            handHeight = h * 0.12f,
+            isLeft = false,
+            openness = 0.5f,
+            tilt = 0.12f,
+        )
     }
 }
 
-private fun DrawScope.drawOEye(cx: Float, cy: Float, radius: Float) {
-    drawCircle(color = odiBlue, radius = radius, center = Offset(cx, cy), style = Stroke(radius * 0.22f))
-    drawCircle(color = pupilColor, radius = radius * 0.35f, center = Offset(cx, cy))
-    drawCircle(color = odiAccent, radius = radius * 0.15f, center = Offset(cx - radius * 0.12f, cy - radius * 0.12f))
-}
+private fun DrawScope.drawLeftBrow(cx: Float, cy: Float, radius: Float, irisX: Float) {
 
-private fun DrawScope.drawDEye(cx: Float, cy: Float, radius: Float) {
-    // D-shape: flat left side, curved right
+    val eyeRadius = radius * 0.75f
+
     drawArc(
         color = odiBlue,
-        startAngle = -90f,
+        startAngle = 180f,
         sweepAngle = 180f,
         useCenter = false,
         style = Stroke(radius * 0.22f, cap = StrokeCap.Butt),
-        topLeft = Offset(cx - radius, cy - radius),
-        size = Size(radius * 2, radius * 2)
+        topLeft = Offset(cx - eyeRadius, cy - eyeRadius),
+        size = Size(eyeRadius * 2, eyeRadius * 2)
     )
-    // Flat line on left
-    drawLine(color = odiBlue, start = Offset(cx, cy - radius), end = Offset(cx, cy + radius), strokeWidth = radius * 0.22f)
-    drawCircle(color = pupilColor, radius = radius * 0.35f, center = Offset(cx + radius * 0.15f, cy))
-    drawCircle(color = odiAccent, radius = radius * 0.15f, center = Offset(cx + radius * 0.05f, cy - radius * 0.12f))
+    val movement = radius * 0.30f
+    val irisCenter = Offset(
+        cx + irisX * movement,
+        cy + radius * 0.12f
+    )
+    // Actual Eyes
+    drawCircle(color = pupilColor, radius = radius * 0.35f, center = Offset(cx, cy))
+    drawCircle(color = odiAccent, radius = radius * 0.15f, center = irisCenter)
 }
 
-private fun DrawScope.drawCMouth(cx: Float, cy: Float, radius: Float, talkProgress: Float, celebrating: Boolean) {
-    val baseSweep = if (celebrating) 240f else 210f
-    val sweep = baseSweep + talkProgress * 20f
-    val startAngle = 45f - talkProgress * 5f
-    val yOffset = if (celebrating) -radius * 0.12f else 0f
+// Complete change. Eyebrow archs, maybe hands too? Looks more invested in you
+private fun DrawScope.drawRightBrow(cx: Float, cy: Float, radius: Float, irisX: Float) {
+    // D-shape: flat left side, curved right
+
+    val eyeRadius = radius * 0.75f
+
     drawArc(
         color = odiBlue,
-        startAngle = startAngle,
-        sweepAngle = sweep,
+        startAngle = 180f,
+        sweepAngle = 180f,
         useCenter = false,
-        style = Stroke(radius * 0.18f, cap = StrokeCap.Round),
-        topLeft = Offset(cx - radius, cy - radius + yOffset),
-        size = Size(radius * 2, radius * 2)
+        style = Stroke(radius * 0.22f, cap = StrokeCap.Butt),
+        topLeft = Offset(cx - eyeRadius, cy - eyeRadius),
+        size = Size(eyeRadius * 2, eyeRadius * 2)
+    )
+    val movement = radius * 0.30f
+    val irisCenter = Offset(
+        cx + irisX * movement,
+        cy + radius * 0.12f
+    )
+    // Actual Eyes
+    drawCircle(color = pupilColor, radius = radius * 0.35f, center = Offset(cx, cy))
+    drawCircle(color = odiAccent, radius = radius * 0.15f, center = irisCenter)
+}
+
+// Right now no animation for emotions, first have to look more into it, later
+private fun DrawScope.drawNose(cx: Float, cy: Float, radius: Float) {
+    drawArc(
+        color = odiBlue,
+        startAngle = 42f,
+        sweepAngle = 205f,
+        useCenter = false,
+        style = Stroke(radius * 0.3f, cap = StrokeCap.Round),
+        topLeft = Offset(cx - radius, cy - radius * 2f),
+        size = Size(radius * 2f, radius * 2f)
     )
 }
+
+// HANDS WE GOT HANDS WE THROW HANDS.
+// Maybe like a little Keyboard or small button
+private fun DrawScope.drawThreeFingerHand(
+    cx: Float,
+    cy: Float,
+    handWidth: Float,
+    handHeight: Float,
+    isLeft: Boolean = true,
+    openness: Float = 0.6f,
+    tilt: Float = 0.18f,
+    color: Color = odiBlue
+) {
+    val palmW = handWidth * 0.8f
+    val palmH = handHeight * 0.55f
+    val fingerW = handWidth * 0.22f
+    val fingerH = handHeight * 0.9f
+    val stroke = (handWidth.coerceAtLeast(handHeight) * 0.06f).coerceAtLeast(2f)
+    val m = if (isLeft) -1f else 1f
+
+    val fingerBaseX = floatArrayOf(-0.3f, 0f, 0.3f)
+    for (i in 0 until 3) {
+        val base = cx + (fingerBaseX[i] * palmW * 0.9f * m)
+        val tipX = base + (m * openness * fingerW * (i - 1) * 0.45f)
+        // Mirror vertically: fingers point downward from the palm
+        val tipY = cy + palmH * 0.7f + fingerH * (0.95f + 0.05f * i) + tilt * handHeight * 0.12f
+
+        val p = Path().apply {
+            // start at lower palm edge instead of top
+            moveTo(base, cy + palmH * 0.25f)
+            quadraticTo(
+                base + (m * 0.05f * palmW),
+                cy + palmH * 0.6f + fingerH * 0.35f,
+                tipX,
+                tipY
+            )
+        }
+        drawPath(p, color = color, style = Stroke(width = stroke * 0.7f, cap = StrokeCap.Round))
+        drawCircle(color = color, radius = stroke * 0.75f, center = Offset(tipX, tipY))
+    }
+
+    val sepStroke = stroke * 0.5f
+    for (i in 0 until 2) {
+        val sx = cx + (fingerBaseX[i] * palmW * 0.9f * m) + (m * 0.08f * palmW)
+        val sy = cy + palmH * 0.45f
+        val ex = cx + (fingerBaseX[i + 1] * palmW * 0.9f * m) - (m * 0.08f * palmW)
+        val ey = cy + palmH * 0.5f
+        val sp = Path().apply {
+            moveTo(sx, sy)
+            quadraticTo((sx + ex) / 2f + m * 0.02f * palmW, (sy + ey) / 2f - 0.03f * palmH, ex, ey)
+        }
+        drawPath(sp, color = color.copy(alpha = 0.9f), style = Stroke(width = sepStroke, cap = StrokeCap.Round))
+    }
+}
+
+// HANDS WE GOT HANDS
+

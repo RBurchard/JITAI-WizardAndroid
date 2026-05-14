@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -33,6 +34,7 @@ enum class OdiAnimationState {
     CELEBRATING
 }
 
+// Adding Color
 private val odiBlue = Color(0xFF1565C0)
 private val odiAccent = Color(0xFF42A5F5)
 private val pupilColor = Color.White
@@ -43,11 +45,14 @@ fun OdiCharacter(
     modifier: Modifier = Modifier,
     size: Dp = 140.dp
 ) {
+
+    // Eye animation, 1f open, 0f closed
+
     var blinkProgress by remember { mutableStateOf(1f) }
-    val talkProgress by animateFloatAsState(
-        targetValue = if (state == OdiAnimationState.TALKING) 1f else 0f,
-        animationSpec = tween(300)
-    )
+
+    var irisX by remember { mutableStateOf(0f) }
+    var irisY by remember { mutableStateOf(0f) }
+
     val thinkOffset by animateFloatAsState(
         targetValue = if (state == OdiAnimationState.THINKING) 0.15f else 0f,
         animationSpec = repeatable(
@@ -61,63 +66,161 @@ fun OdiCharacter(
         animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy)
     )
 
+    val irisOffsetX by animateFloatAsState(
+        targetValue = irisX,
+        animationSpec = tween(300)
+    )
+    val irisOffsetY by animateFloatAsState(
+        targetValue = irisY,
+        animationSpec = tween(300)
+    )
+
+    // occilate between eye every 3 - 5 sec)
     LaunchedEffect(Unit) {
         while (true) {
+            // Eye test
+            val nextIrisX = Random.nextFloat() * 2f - 1f
+            val nextIrisY = Random.nextFloat() * 2f - 1f
+            if (nextIrisX != irisX || nextIrisY != irisY) {
+                irisX = nextIrisX
+                irisY = nextIrisY
+            }
+
             delay(Random.nextLong(3000, 5500))
+
+            // Blinking
             blinkProgress = 0f
             delay(120)
             blinkProgress = 1f
         }
     }
 
+    // Drawing
+
     Canvas(modifier = modifier.size(size)) {
         val w = this.size.width
         val h = this.size.height
         val eyeRadius = w * 0.18f * celebrateScale
-        val eyeY = h * 0.38f
+
+        // Eye positions
+        val eyeY = h * 0.34f
         val leftEyeX = w * 0.30f
         val rightEyeX = w * 0.70f
         val openEyeRadius = eyeRadius * blinkProgress.coerceAtLeast(0.05f)
 
-        drawOEye(leftEyeX, eyeY + thinkOffset * h, openEyeRadius)
-        drawDEye(rightEyeX, eyeY + thinkOffset * h, openEyeRadius)
-        drawCMouth(w * 0.5f, h * 0.80f, w * 0.22f, talkProgress, state == OdiAnimationState.CELEBRATING)
+        // O and D eye (maybe change later?)
+        //drawOEye(leftEyeX + irisOffsetX, eyeY + thinkOffset * h + irisOffsetY, openEyeRadius)
+        //drawDEye(rightEyeX + irisOffsetX, eyeY + thinkOffset * h, openEyeRadius + irisOffsetY)
+        drawOEye(
+                leftEyeX,
+                eyeY + thinkOffset * h,
+                openEyeRadius,
+                irisOffsetX,
+                irisOffsetY
+                )
+        drawDEye(
+                rightEyeX,
+                eyeY + thinkOffset * h,
+                openEyeRadius,
+                irisOffsetX,
+                irisOffsetY
+                )
+
+        // Small C-shaped nose in the middle
+        drawNose(w * 0.50f, h * 0.75f, w * 0.12f)
+
+        // Side smile
+        drawSideSmile(w * 0.58f, h * 0.85f, w * 0.14f)
     }
 }
-
-private fun DrawScope.drawOEye(cx: Float, cy: Float, radius: Float) {
-    drawCircle(color = odiBlue, radius = radius, center = Offset(cx, cy), style = Stroke(radius * 0.22f))
+// Here is where the function to draw happens
+private fun DrawScope.drawOEye(cx: Float, cy: Float, radius: Float, irisX: Float, irisY: Float) {
+    drawCircle(color = odiBlue, radius = radius * 0.75f, center = Offset(cx, cy), style = Stroke(radius * 0.22f))
+    val movement = radius * 0.30f
+    val irisCenter = Offset(
+        cx + irisX * movement,
+        cy + irisY * movement
+    )
     drawCircle(color = pupilColor, radius = radius * 0.35f, center = Offset(cx, cy))
-    drawCircle(color = odiAccent, radius = radius * 0.15f, center = Offset(cx - radius * 0.12f, cy - radius * 0.12f))
+    drawCircle(color = odiAccent, radius = radius * 0.15f, center = irisCenter)
 }
 
-private fun DrawScope.drawDEye(cx: Float, cy: Float, radius: Float) {
+private fun DrawScope.drawDEye(
+    cx: Float,
+    cy: Float,
+    radius: Float,
+    irisX: Float,
+    irisY: Float
+) {
+    val eyeRadius = radius * 0.75f
+    val stroke = radius * 0.22f
+
     drawArc(
         color = odiBlue,
         startAngle = -90f,
         sweepAngle = 180f,
         useCenter = false,
-        style = Stroke(radius * 0.22f, cap = StrokeCap.Butt),
-        topLeft = Offset(cx - radius, cy - radius),
-        size = Size(radius * 2, radius * 2)
+        style = Stroke(stroke, cap = StrokeCap.Butt),
+        topLeft = Offset(cx - eyeRadius, cy - eyeRadius),
+        size = Size(eyeRadius * 2f, eyeRadius * 2f)
     )
-    drawLine(color = odiBlue, start = Offset(cx, cy - radius), end = Offset(cx, cy + radius), strokeWidth = radius * 0.22f)
-    drawCircle(color = pupilColor, radius = radius * 0.35f, center = Offset(cx + radius * 0.15f, cy))
-    drawCircle(color = odiAccent, radius = radius * 0.15f, center = Offset(cx + radius * 0.05f, cy - radius * 0.12f))
+
+    drawLine(
+        color = odiBlue,
+        start = Offset(cx, cy - eyeRadius),
+        end = Offset(cx, cy + eyeRadius),
+        strokeWidth = stroke
+    )
+
+    val movement = radius * 0.30f
+    val irisCenter = Offset(
+        cx + irisX * movement,
+        cy + irisY * movement
+    )
+
+    // Actual Eye
+    drawCircle(
+        color = pupilColor,
+        radius = radius * 0.35f,
+        center = Offset(cx, cy)
+    )
+
+    drawCircle(
+        color = odiAccent,
+        radius = radius * 0.15f,
+        center = irisCenter
+    )
 }
 
-private fun DrawScope.drawCMouth(cx: Float, cy: Float, radius: Float, talkProgress: Float, celebrating: Boolean) {
-    val baseSweep = if (celebrating) 240f else 210f
-    val sweep = baseSweep + talkProgress * 20f
-    val startAngle = 45f - talkProgress * 5f
-    val yOffset = if (celebrating) -radius * 0.12f else 0f
+private fun DrawScope.drawNose(cx: Float, cy: Float, radius: Float) {
     drawArc(
         color = odiBlue,
-        startAngle = startAngle,
-        sweepAngle = sweep,
+        startAngle = 42f,
+        sweepAngle = 205f,
         useCenter = false,
-        style = Stroke(radius * 0.18f, cap = StrokeCap.Round),
-        topLeft = Offset(cx - radius, cy - radius + yOffset),
-        size = Size(radius * 2, radius * 2)
+        style = Stroke(radius * 0.3f, cap = StrokeCap.Round),
+        topLeft = Offset(cx - radius, cy - radius * 2f),
+        size = Size(radius * 2f, radius * 2f)
     )
 }
+
+private fun DrawScope.drawSideSmile(cx: Float, cy: Float, width: Float) {
+    val height = width * 0.55f
+    val path = Path().apply {
+        moveTo(cx - width * 0.32f, cy)
+        quadraticTo(
+            cx + width * 0.05f,
+            cy + height * 0.35f,
+            cx + width * 1.75f,
+            cy - height * 1.5f
+        )
+    }
+
+    drawPath(
+        path = path,
+        color = odiBlue,
+        style = Stroke(width * 0.15f, cap = StrokeCap.Round)
+    )
+}
+
+
