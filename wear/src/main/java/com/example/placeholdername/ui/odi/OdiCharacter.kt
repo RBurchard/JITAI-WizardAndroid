@@ -75,17 +75,16 @@ fun OdiCharacter(
         animationSpec = tween(300)
     )
 
-    // occilate between eye every 3 - 5 sec)
     LaunchedEffect(Unit) {
         while (true) {
             // Eye test
-            val nextIrisX = Random.nextFloat() * 2f - 1f
-            val nextIrisY = Random.nextFloat() * 2f - 1f
+            val nextIrisX = Random.nextFloat() * 1f
+            val nextIrisY = Random.nextFloat() * 1f
             if (nextIrisX != irisX || nextIrisY != irisY) {
                 irisX = nextIrisX
                 irisY = nextIrisY
             }
-
+            // occilate between eye every 3 - 5 sec)
             delay(Random.nextLong(3000, 5500))
 
             // Blinking
@@ -127,13 +126,13 @@ fun OdiCharacter(
                 )
 
         // Small C-shaped nose in the middle
-        drawCNose(w * 0.50f, h * 0.75f, w * 0.12f)
+        drawCNose(w * 0.50f, h * 0.75f, w * 0.14f)
     }
 }
 // Here is where the function to draw happens
 private fun DrawScope.drawOEye(cx: Float, cy: Float, radius: Float, irisX: Float, irisY: Float) {
     drawCircle(color = odiBlue, radius = radius * 0.75f, center = Offset(cx, cy), style = Stroke(radius * 0.22f))
-    val movement = radius * 0.30f
+    val movement = radius * 0.20f
     val irisCenter = Offset(
         cx + irisX * movement,
         cy + irisY * movement
@@ -164,12 +163,12 @@ private fun DrawScope.drawDEye(
 
     drawLine(
         color = odiBlue,
-        start = Offset(cx, cy - eyeRadius),
-        end = Offset(cx, cy + eyeRadius),
-        strokeWidth = stroke
+        start = Offset(cx * 0.98f, cy - eyeRadius * 1.15f),
+        end = Offset(cx * 0.98f, cy + eyeRadius * 1.15f),
+        strokeWidth = stroke,
     )
 
-    val movement = radius * 0.30f
+    val movement = radius * 0.20f
     val irisCenter = Offset(
         cx + irisX * movement,
         cy + irisY * movement
@@ -192,11 +191,11 @@ private fun DrawScope.drawDEye(
 private fun DrawScope.drawCNose(cx: Float, cy: Float, radius: Float) {
     drawArc(
         color = odiBlue,
-        startAngle = 42f,
-        sweepAngle = 205f,
+        startAngle = 25f,
+        sweepAngle = 220f,
         useCenter = false,
         style = Stroke(radius * 0.3f, cap = StrokeCap.Round),
-        topLeft = Offset(cx - radius, cy - radius * 2f),
+        topLeft = Offset(cx - radius * 0.75f, cy - radius * 2f),
         size = Size(radius * 2f, radius * 2f)
     )
 }
