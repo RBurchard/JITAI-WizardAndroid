@@ -84,9 +84,9 @@ fun OdiCharacter(
         val rightEyeX = w * 0.70f
         val openEyeRadius = eyeRadius * blinkProgress.coerceAtLeast(0.05f)
 
-        drawLeftBrow(leftEyeX, eyeY + thinkOffset * h, openEyeRadius, irisX = irisOffsetX)
-        drawRightBrow(rightEyeX, eyeY + thinkOffset * h, openEyeRadius, irisX = irisOffsetX)
-        drawNose(w * 0.50f, h * 0.75f, w * 0.12f)
+        drawOEye(leftEyeX, eyeY + thinkOffset * h, openEyeRadius, irisX = irisOffsetX)
+        drawDEye(rightEyeX, eyeY + thinkOffset * h, openEyeRadius, irisX = irisOffsetX)
+        drawONose(w * 0.50f, h * 0.75f, w * 0.13f)
         // Hands: expectant/observant, hovering under the UI box
         drawThreeFingerHand(
             cx = w * 0.28f,
@@ -109,14 +109,16 @@ fun OdiCharacter(
     }
 }
 
-private fun DrawScope.drawLeftBrow(cx: Float, cy: Float, radius: Float, irisX: Float) {
+// Face is OCD
+
+private fun DrawScope.drawOEye(cx: Float, cy: Float, radius: Float, irisX: Float) {
 
     val eyeRadius = radius * 0.75f
 
     drawArc(
         color = odiBlue,
-        startAngle = 180f,
-        sweepAngle = 180f,
+        startAngle = 0f,
+        sweepAngle = 360f,
         useCenter = false,
         style = Stroke(radius * 0.22f, cap = StrokeCap.Butt),
         topLeft = Offset(cx - eyeRadius, cy - eyeRadius),
@@ -133,19 +135,25 @@ private fun DrawScope.drawLeftBrow(cx: Float, cy: Float, radius: Float, irisX: F
 }
 
 // Complete change. Eyebrow archs, maybe hands too? Looks more invested in you
-private fun DrawScope.drawRightBrow(cx: Float, cy: Float, radius: Float, irisX: Float) {
+private fun DrawScope.drawDEye(cx: Float, cy: Float, radius: Float, irisX: Float) {
     // D-shape: flat left side, curved right
 
     val eyeRadius = radius * 0.75f
 
     drawArc(
         color = odiBlue,
-        startAngle = 180f,
+        startAngle = -90f,
         sweepAngle = 180f,
         useCenter = false,
         style = Stroke(radius * 0.22f, cap = StrokeCap.Butt),
         topLeft = Offset(cx - eyeRadius, cy - eyeRadius),
         size = Size(eyeRadius * 2, eyeRadius * 2)
+    )
+    drawLine(
+        color = odiBlue,
+        start = Offset(cx * 0.98f, cy - eyeRadius * 1.15f),
+        end = Offset(cx * 0.98f, cy + eyeRadius * 1.15f),
+        strokeWidth = radius * 0.22f,
     )
     val movement = radius * 0.30f
     val irisCenter = Offset(
@@ -158,14 +166,14 @@ private fun DrawScope.drawRightBrow(cx: Float, cy: Float, radius: Float, irisX: 
 }
 
 // Right now no animation for emotions, first have to look more into it, later
-private fun DrawScope.drawNose(cx: Float, cy: Float, radius: Float) {
+private fun DrawScope.drawONose(cx: Float, cy: Float, radius: Float) {
     drawArc(
         color = odiBlue,
-        startAngle = 42f,
-        sweepAngle = 205f,
+        startAngle = 25f,
+        sweepAngle = 220f,
         useCenter = false,
         style = Stroke(radius * 0.3f, cap = StrokeCap.Round),
-        topLeft = Offset(cx - radius, cy - radius * 2f),
+        topLeft = Offset(cx - radius * 0.75f, cy - radius * 2f),
         size = Size(radius * 2f, radius * 2f)
     )
 }
