@@ -84,9 +84,25 @@ fun OdiCharacter(
         val rightEyeX = w * 0.70f
         val openEyeRadius = eyeRadius * blinkProgress.coerceAtLeast(0.05f)
 
-        drawOEye(leftEyeX, eyeY + thinkOffset * h, openEyeRadius, irisX = irisOffsetX)
-        drawDEye(rightEyeX, eyeY + thinkOffset * h, openEyeRadius, irisX = irisOffsetX)
-        drawONose(w * 0.50f, h * 0.75f, w * 0.13f)
+        drawOEye(
+            leftEyeX,
+            eyeY + thinkOffset * h,
+            eyeRadius,
+            openEyeRadius,
+            irisX = irisOffsetX
+        )
+        drawDEye(
+            rightEyeX,
+            eyeY + thinkOffset * h,
+            eyeRadius,
+            openEyeRadius,
+            irisX = irisOffsetX
+        )
+        drawONose(
+            w * 0.50f,
+            h * 0.75f,
+            w * 0.13f
+        )
         // Hands: expectant/observant, hovering under the UI box
         drawThreeFingerHand(
             cx = w * 0.28f,
@@ -111,7 +127,13 @@ fun OdiCharacter(
 
 // Face is OCD
 
-private fun DrawScope.drawOEye(cx: Float, cy: Float, radius: Float, irisX: Float) {
+private fun DrawScope.drawOEye(
+    cx: Float,
+    cy: Float,
+    radius: Float,
+    blink: Float,
+    irisX: Float
+) {
 
     val eyeRadius = radius * 0.75f
 
@@ -130,12 +152,18 @@ private fun DrawScope.drawOEye(cx: Float, cy: Float, radius: Float, irisX: Float
         cy + radius * 0.12f
     )
     // Actual Eyes
-    drawCircle(color = pupilColor, radius = radius * 0.35f, center = Offset(cx, cy))
-    drawCircle(color = odiAccent, radius = radius * 0.15f, center = irisCenter)
+    drawCircle(color = pupilColor, radius = blink * 0.35f, center = Offset(cx, cy))
+    drawCircle(color = odiAccent, radius = blink * 0.15f, center = irisCenter)
 }
 
 // Complete change. Eyebrow archs, maybe hands too? Looks more invested in you
-private fun DrawScope.drawDEye(cx: Float, cy: Float, radius: Float, irisX: Float) {
+private fun DrawScope.drawDEye(
+    cx: Float,
+    cy: Float,
+    radius: Float,
+    blink: Float,
+    irisX: Float
+) {
     // D-shape: flat left side, curved right
 
     val eyeRadius = radius * 0.75f
@@ -161,8 +189,8 @@ private fun DrawScope.drawDEye(cx: Float, cy: Float, radius: Float, irisX: Float
         cy + radius * 0.12f
     )
     // Actual Eyes
-    drawCircle(color = pupilColor, radius = radius * 0.35f, center = Offset(cx, cy))
-    drawCircle(color = odiAccent, radius = radius * 0.15f, center = irisCenter)
+    drawCircle(color = pupilColor, radius = blink * 0.35f, center = Offset(cx, cy))
+    drawCircle(color = odiAccent, radius = blink * 0.15f, center = irisCenter)
 }
 
 // Right now no animation for emotions, first have to look more into it, later

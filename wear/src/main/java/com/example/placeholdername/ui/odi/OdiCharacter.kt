@@ -113,6 +113,7 @@ fun OdiCharacter(
         drawOEye(
                 leftEyeX,
                 eyeY + thinkOffset * h,
+                eyeRadius,
                 openEyeRadius,
                 irisOffsetX,
                 irisOffsetY
@@ -120,6 +121,7 @@ fun OdiCharacter(
         drawDEye(
                 rightEyeX,
                 eyeY + thinkOffset * h,
+                eyeRadius,
                 openEyeRadius,
                 irisOffsetX,
                 irisOffsetY
@@ -130,21 +132,30 @@ fun OdiCharacter(
     }
 }
 // Here is where the function to draw happens
-private fun DrawScope.drawOEye(cx: Float, cy: Float, radius: Float, irisX: Float, irisY: Float) {
+private fun DrawScope.drawOEye(
+    cx: Float,
+    cy: Float,
+    radius: Float,
+    blink: Float,
+    irisX: Float,
+    irisY:
+    Float
+) {
     drawCircle(color = odiBlue, radius = radius * 0.75f, center = Offset(cx, cy), style = Stroke(radius * 0.22f))
     val movement = radius * 0.20f
     val irisCenter = Offset(
         cx + irisX * movement,
         cy + irisY * movement
     )
-    drawCircle(color = pupilColor, radius = radius * 0.35f, center = Offset(cx, cy))
-    drawCircle(color = odiAccent, radius = radius * 0.15f, center = irisCenter)
+    drawCircle(color = pupilColor, radius = blink * 0.35f, center = Offset(cx, cy))
+    drawCircle(color = odiAccent, radius = blink * 0.15f, center = irisCenter)
 }
 
 private fun DrawScope.drawDEye(
     cx: Float,
     cy: Float,
     radius: Float,
+    blink: Float,
     irisX: Float,
     irisY: Float
 ) {
@@ -177,13 +188,13 @@ private fun DrawScope.drawDEye(
     // Actual Eye
     drawCircle(
         color = pupilColor,
-        radius = radius * 0.35f,
+        radius = blink * 0.35f,
         center = Offset(cx, cy)
     )
 
     drawCircle(
         color = odiAccent,
-        radius = radius * 0.15f,
+        radius = blink * 0.15f,
         center = irisCenter
     )
 }
