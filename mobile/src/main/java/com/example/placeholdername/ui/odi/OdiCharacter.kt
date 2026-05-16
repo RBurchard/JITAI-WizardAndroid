@@ -15,7 +15,6 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
-// ...existing code...
 import kotlin.random.Random
 
 private val odiBlue = Color(0xFF1565C0)

@@ -127,10 +127,7 @@ fun OdiCharacter(
                 )
 
         // Small C-shaped nose in the middle
-        drawNose(w * 0.50f, h * 0.75f, w * 0.12f)
-
-        // Side smile
-        drawSideSmile(w * 0.58f, h * 0.85f, w * 0.14f)
+        drawCNose(w * 0.50f, h * 0.75f, w * 0.12f)
     }
 }
 // Here is where the function to draw happens
@@ -192,7 +189,7 @@ private fun DrawScope.drawDEye(
     )
 }
 
-private fun DrawScope.drawNose(cx: Float, cy: Float, radius: Float) {
+private fun DrawScope.drawCNose(cx: Float, cy: Float, radius: Float) {
     drawArc(
         color = odiBlue,
         startAngle = 42f,
@@ -201,25 +198,6 @@ private fun DrawScope.drawNose(cx: Float, cy: Float, radius: Float) {
         style = Stroke(radius * 0.3f, cap = StrokeCap.Round),
         topLeft = Offset(cx - radius, cy - radius * 2f),
         size = Size(radius * 2f, radius * 2f)
-    )
-}
-
-private fun DrawScope.drawSideSmile(cx: Float, cy: Float, width: Float) {
-    val height = width * 0.55f
-    val path = Path().apply {
-        moveTo(cx - width * 0.32f, cy)
-        quadraticTo(
-            cx + width * 0.05f,
-            cy + height * 0.35f,
-            cx + width * 1.75f,
-            cy - height * 1.5f
-        )
-    }
-
-    drawPath(
-        path = path,
-        color = odiBlue,
-        style = Stroke(width * 0.15f, cap = StrokeCap.Round)
     )
 }
 
