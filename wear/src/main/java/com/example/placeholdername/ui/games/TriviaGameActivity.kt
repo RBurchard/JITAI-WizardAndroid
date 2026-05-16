@@ -15,6 +15,7 @@ import androidx.wear.compose.material3.Button
 import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.Text
 import com.example.jitaicompanion.convention.Protocol
+import com.example.jitaicompanion.convention.models.Intervention
 import com.example.jitaicompanion.convention.trivia.TriviaQuestion
 import kotlinx.serialization.json.Json
 
@@ -29,8 +30,7 @@ class TriviaGameActivity : MicrogameActivity() {
         val interventionJson = intent.getStringExtra(Protocol.KEY_INTERVENTION) ?: ""
         // Question may be embedded in intervention message as JSON, or fall back to a default
         question = try {
-            val map = Json.decodeFromString<Map<String, String>>(interventionJson)
-            map["triviaQuestion"]?.let { Json.decodeFromString<TriviaQuestion>(it) }
+            Json.decodeFromString<Intervention>(interventionJson).triviaQuestion
         } catch (e: Exception) { null } ?: FallbackQuestions.random()
     }
 

@@ -1,10 +1,10 @@
 package com.BWPStudio.JITAIWizard.server.routes
 
-import com.example.jitaicompanion.convention.models.Intervention
-import com.example.jitaicompanion.convention.models.InterventionRequest
+import android.content.Context
 import com.BWPStudio.JITAIWizard.datalayer.WearMessageSender
 import com.BWPStudio.JITAIWizard.server.ServerState
-import android.content.Context
+import com.example.jitaicompanion.convention.models.Intervention
+import com.example.jitaicompanion.convention.models.InterventionRequest
 import io.ktor.http.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
@@ -13,9 +13,12 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.util.UUID
 
+private val triggerJson = Json { ignoreUnknownKeys = true; coerceInputValues = true }
+
 fun Route.triggerRoute(context: Context) {
     post("/trigger") {
-        val req = call.receive<InterventionRequest>()
+        val body = call.receiveText()
+        val req = triggerJson.decodeFromString<InterventionRequest>(body)
         val intervention = Intervention(
             id = UUID.randomUUID().toString(),
             type = when {
@@ -26,12 +29,15 @@ fun Route.triggerRoute(context: Context) {
             message = req.message,
             durationSeconds = maxOf(1, req.durationMs / 1000),
             gameType = req.gameType,
-            phoneTaskType = req.phoneTaskType
+            phoneTaskType = req.phoneTaskType,
+            triviaQuestion = req.triviaQuestion
         )
         req.triviaQuestion?.let { ServerState.triviaQuestions = listOf(it) }
         ServerState.lastInterventionSentAt = System.currentTimeMillis()
-        val json = Json.encodeToString(intervention)
-        WearMessageSender(context).sendIntervention(json)
-        call.respond(HttpStatusCode.OK, mapOf("status" to "sent", "id" to intervention.id))
+        WearMessageSender(context).sendIntervention(Json.encodeToString(intervention))
+        call.respondText(
+            """{"status":"sent","id":"${intervention.id}"}""",
+            ContentType.Application.Json
+        )
     }
 }

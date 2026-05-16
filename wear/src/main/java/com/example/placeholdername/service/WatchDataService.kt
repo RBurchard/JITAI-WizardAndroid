@@ -40,7 +40,7 @@ class WatchDataService : Service(), SensorEventListener {
         private const val TAG = "WatchDataService"
         private const val CHANNEL_ID = "watch_data_channel"
         private const val NOTIFICATION_ID = 1001
-        private const val BATCH_INTERVAL_MS = 1000L
+        private const val BATCH_INTERVAL_MS = 100L
 
         private val _isRunning = MutableStateFlow(false)
         val isRunning: StateFlow<Boolean> = _isRunning.asStateFlow()
