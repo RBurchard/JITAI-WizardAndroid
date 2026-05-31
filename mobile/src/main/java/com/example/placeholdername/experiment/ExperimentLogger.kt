@@ -49,6 +49,14 @@ class ExperimentLogger(private val context: Context) {
     }
 
     fun log(event: LogEvent) {
+        scope.launch {
+            SessionLogStore.append(
+                source = "experiment",
+                kind = event.eventType,
+                payloadJson = "{\"value\":${jsonString(event.value)},\"details\":${jsonString(event.details)},\"participant\":${jsonString(participant)}}",
+                ts = event.timestamp
+            )
+        }
         if (!saveLogs) return
         scope.launch {
             val line = "${event.timestamp}\t$participant\t${event.eventType}\t${event.value}\t${event.details}\n"
@@ -58,6 +66,22 @@ class ExperimentLogger(private val context: Context) {
                 legacyFile.appendText(line)
             }
         }
+    }
+
+    private fun jsonString(value: String): String {
+        val sb = StringBuilder(value.length + 2)
+        sb.append('"')
+        for (c in value) {
+            when (c) {
+                '\\', '"' -> { sb.append('\\'); sb.append(c) }
+                '\n' -> sb.append("\\n")
+                '\r' -> sb.append("\\r")
+                '\t' -> sb.append("\\t")
+                else -> if (c.code < 0x20) sb.append("\\u%04x".format(c.code)) else sb.append(c)
+            }
+        }
+        sb.append('"')
+        return sb.toString()
     }
 }
 

@@ -8,6 +8,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -34,9 +35,14 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import com.example.jitaicompanion.convention.models.Experiment
+import com.example.jitaicompanion.convention.models.GameType
 import com.example.jitaicompanion.convention.models.Intervention
 import com.example.jitaicompanion.convention.models.NotificationType
+import com.example.jitaicompanion.convention.models.PhoneTaskType
+import com.example.jitaicompanion.convention.models.TriggerKind
 import com.BWPStudio.JITAIWizard.JITAIWizardApp
+import com.BWPStudio.JITAIWizard.experiment.EngineMode
 import com.BWPStudio.JITAIWizard.experiment.Event
 import com.BWPStudio.JITAIWizard.experiment.LogEvent
 import com.BWPStudio.JITAIWizard.ui.components.StringOptionDropdown
@@ -52,30 +58,37 @@ import java.util.UUID
 
 @Composable
 fun ExperimentScreen(onWearError: (String) -> Unit = {}) {
+    val context = LocalContext.current
+    val app = context.applicationContext as JITAIWizardApp
+
     var list by remember {
-        mutableStateOf(listOf(
-            Event("1", 30f, "Example Event A",
-                Intervention("int1", "Text", NotificationType.VIBRATION1, "Stop!", 15)),
-            Event("2", 30f, "Break", null),
-            Event("3", 30f, "Example Event B", null)
-        ))
+        mutableStateOf(app.experimentStore.active.value.events.map { Event.fromShared(it) })
     }
     val lazyListState = rememberLazyListState()
     val reorderState = rememberReorderableLazyListState(lazyListState) { from, to ->
         list = list.toMutableList().apply { add(to.index, removeAt(from.index)) }
     }
-    val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var editMode by remember { mutableStateOf(false) }
     var running by rememberSaveable { mutableStateOf(false) }
     var settingsOpen by remember { mutableStateOf(false) }
-    var experiment by remember { mutableStateOf("defaultExperiment") }
+    var experiment by remember { mutableStateOf(app.experimentStore.active.value.name) }
     var participantId by remember { mutableStateOf("defaultParticipant") }
     var saveLogsBool by remember { mutableStateOf(true) }
     var eventToEdit by remember { mutableStateOf<Event?>(null) }
     var eventToHighlight by remember { mutableStateOf<Event?>(null) }
     var elapsedSeconds by rememberSaveable { mutableStateOf(0) }
     var interventionSent by remember { mutableStateOf(false) }
+
+    // Live sync: update the list whenever the store changes (e.g. ControlStation pushes)
+    LaunchedEffect(Unit) {
+        app.experimentStore.active.collect { exp ->
+            if (!running) {
+                list = exp.events.map { Event.fromShared(it) }
+                experiment = exp.name
+            }
+        }
+    }
 
     val createFileLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
         uri?.let { context.contentResolver.openOutputStream(it)?.use { s -> s.write(Json.encodeToString(list).toByteArray()) } }
@@ -92,7 +105,7 @@ fun ExperimentScreen(onWearError: (String) -> Unit = {}) {
         if (running) { elapsedSeconds = 0; while (running) { delay(1000); elapsedSeconds++ } }
     }
 
-    val logger = (context.applicationContext as JITAIWizardApp).logger
+    val logger = app.logger
     val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH-mm-ss.SSS")
 
     Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
@@ -127,6 +140,21 @@ fun ExperimentScreen(onWearError: (String) -> Unit = {}) {
                             logger.log(LogEvent(eventType = "Experiment", value = "stop"))
                         }
                     }, enabled = !editMode) { Text(if (running) "Stop" else "Start") }
+
+                    Button(onClick = {
+                        if (list.isEmpty()) { Toast.makeText(context, "No events!", Toast.LENGTH_SHORT).show(); return@Button }
+                        val current = app.experimentStore.active.value
+                        val updated = current.copy(
+                            name = experiment,
+                            events = list.map { it.toShared() },
+                            triggers = current.triggers
+                        )
+                        app.experimentStore.replace(updated)
+                        com.BWPStudio.JITAIWizard.triggers.TriggerEngine.setTriggers(updated.triggers)
+                        logger.createLogFile(experiment, participantId, LocalDateTime.now().format(formatter), saveLogsBool)
+                        app.experimentEngine.start(EngineMode.AUTO)
+                        Toast.makeText(context, "Auto run started", Toast.LENGTH_SHORT).show()
+                    }, enabled = !editMode && !running) { Text("Auto") }
                 }
 
                 // Event list
@@ -136,6 +164,9 @@ fun ExperimentScreen(onWearError: (String) -> Unit = {}) {
                     contentPadding = PaddingValues(8.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
+                    item(key = "__triggers__") {
+                        TriggerSummaryRow(app)
+                    }
                     items(list, key = { it.id }) { event ->
                         ReorderableItem(reorderState, key = event.id) { isDragging ->
                             val elevation by animateDpAsState(if (isDragging) 4.dp else 0.dp)
@@ -163,9 +194,21 @@ fun ExperimentScreen(onWearError: (String) -> Unit = {}) {
                                     }
                                     Text(event.type, Modifier.padding(5.dp).fillMaxWidth(if (editMode) 0.18f else 0.3f), fontSize = 18.sp)
                                     if (event.intervention != null) {
-                                        val msgPreview = event.intervention!!.message.take(50)
-                                        Text("${event.intervention!!.type} + ${event.intervention!!.notification}\n\"$msgPreview\"\n${event.intervention!!.durationSeconds}s",
-                                            Modifier.padding(5.dp).fillMaxWidth(if (editMode) 0.45f else 1f))
+                                        val iv = event.intervention!!
+                                        val msgPreview = iv.message.take(40)
+                                        val gameLabel = iv.gameType?.name ?: event.gameType?.name
+                                        val taskLabel = iv.phoneTaskType?.name
+                                        val extras = listOfNotNull(
+                                            gameLabel?.let { "🎮 $it" },
+                                            taskLabel?.let { "📱 $it" }
+                                        ).joinToString("  ")
+                                        Text(
+                                            "${iv.type} · ${iv.notification}  ${iv.durationSeconds}s" +
+                                            (if (extras.isNotEmpty()) "\n$extras" else "") +
+                                            "\n\"$msgPreview\"",
+                                            Modifier.padding(5.dp).fillMaxWidth(if (editMode) 0.45f else 1f),
+                                            fontSize = 13.sp
+                                        )
                                     } else {
                                         Text("Duration: ${event.duration.toInt()} s")
                                     }
@@ -319,10 +362,12 @@ private fun EditEventDialog(event: Event, onDismiss: () -> Unit, onSave: (Event)
     var name by remember { mutableStateOf(event.type) }
     var duration by remember { mutableStateOf(event.duration.toString()) }
     var intervention by remember { mutableStateOf(event.intervention) }
-    var interventionType by remember { mutableStateOf(intervention?.type ?: "") }
-    var interventionNotification by remember { mutableStateOf(intervention?.notification ?: NotificationType.CANCEL) }
+    var interventionType by remember { mutableStateOf(intervention?.type ?: "Text") }
+    var interventionNotification by remember { mutableStateOf(intervention?.notification ?: NotificationType.VIBRATION1) }
     var interventionMessage by remember { mutableStateOf(intervention?.message ?: "") }
-    var interventionDuration by remember { mutableStateOf(intervention?.durationSeconds?.toString() ?: "") }
+    var interventionDuration by remember { mutableStateOf(intervention?.durationSeconds?.toString() ?: "10") }
+    var interventionGameType by remember { mutableStateOf(intervention?.gameType) }
+    var interventionPhoneTask by remember { mutableStateOf(intervention?.phoneTaskType) }
 
     Dialog(onDismissRequest = onDismiss) {
         Surface(shape = MaterialTheme.shapes.medium, tonalElevation = 8.dp, modifier = Modifier.padding(16.dp)) {
@@ -335,38 +380,138 @@ private fun EditEventDialog(event: Event, onDismiss: () -> Unit, onSave: (Event)
                 Spacer(Modifier.height(8.dp))
                 if (intervention == null) {
                     Button(onClick = {
-                        intervention = Intervention(UUID.randomUUID().toString(), "", NotificationType.CANCEL, "", 0)
-                        interventionType = ""; interventionNotification = NotificationType.CANCEL
-                        interventionMessage = ""; interventionDuration = "0"
+                        intervention = Intervention(UUID.randomUUID().toString(), "Text", NotificationType.VIBRATION1, "", 10)
+                        interventionType = "Text"
+                        interventionNotification = NotificationType.VIBRATION1
+                        interventionMessage = ""
+                        interventionDuration = "10"
+                        interventionGameType = null
+                        interventionPhoneTask = null
                     }) { Text("Add Intervention") }
                 } else {
                     Text("Intervention", style = MaterialTheme.typography.titleSmall)
+                    Spacer(Modifier.height(4.dp))
+
                     StringOptionDropdown(selected = interventionType, label = "Type",
                         options = listOf("Text", "Timer", "Yes/No"), onSelect = { interventionType = it })
-                    StringOptionDropdown(selected = interventionNotification.name, label = "Notification",
-                        options = NotificationType.entries.map { it.name },
-                        onSelect = { interventionNotification = NotificationType.valueOf(it) })
-                    OutlinedTextField(value = interventionMessage, onValueChange = { interventionMessage = it }, label = { Text("Message") }, maxLines = 3)
-                    OutlinedTextField(value = interventionDuration, onValueChange = { interventionDuration = it }, label = { Text("Duration (s)") },
+                    StringOptionDropdown(
+                        selected = interventionNotification.name, label = "Notify",
+                        options = NotificationType.entries.filter { it != NotificationType.CANCEL }.map { it.name },
+                        onSelect = { interventionNotification = NotificationType.valueOf(it) }
+                    )
+                    OutlinedTextField(value = interventionMessage, onValueChange = { interventionMessage = it },
+                        label = { Text("Message") }, maxLines = 3)
+                    OutlinedTextField(value = interventionDuration, onValueChange = { interventionDuration = it },
+                        label = { Text("Duration (s)") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), singleLine = true)
+
+                    Spacer(Modifier.height(8.dp))
+                    Text("Microgame (optional)", style = MaterialTheme.typography.labelMedium)
+                    // "None" + all GameType entries
+                    StringOptionDropdown(
+                        selected = interventionGameType?.name ?: "None",
+                        label = "Microgame",
+                        options = listOf("None") + GameType.entries.map { it.name },
+                        onSelect = { selected ->
+                            if (selected == "None") {
+                                interventionGameType = null
+                            } else {
+                                interventionGameType = GameType.valueOf(selected)
+                                interventionPhoneTask = null   // mutually exclusive
+                            }
+                        }
+                    )
+
+                    Spacer(Modifier.height(4.dp))
+                    Text("— or Phone Task —", style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    StringOptionDropdown(
+                        selected = interventionPhoneTask?.name ?: "None",
+                        label = "Phone Task",
+                        options = listOf("None") + PhoneTaskType.entries.map { it.name },
+                        onSelect = { selected ->
+                            if (selected == "None") {
+                                interventionPhoneTask = null
+                            } else {
+                                interventionPhoneTask = PhoneTaskType.valueOf(selected)
+                                interventionGameType = null   // mutually exclusive
+                            }
+                        }
+                    )
+
                     Spacer(Modifier.height(4.dp))
                     Button(onClick = { intervention = null },
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)) { Text("Remove Intervention") }
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                    ) { Text("Remove Intervention") }
                 }
                 Spacer(Modifier.height(12.dp))
                 Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
                     TextButton(onClick = onDismiss) { Text("Cancel") }
                     Spacer(Modifier.width(8.dp))
                     Button(onClick = {
+                        val gt = interventionGameType
                         val updated = event.copy(
                             type = name,
                             duration = duration.toFloatOrNull() ?: event.duration,
-                            intervention = intervention?.copy(type = interventionType, notification = interventionNotification,
-                                message = interventionMessage, durationSeconds = interventionDuration.toIntOrNull() ?: 0)
+                            gameType = gt,
+                            intervention = intervention?.copy(
+                                type = interventionType,
+                                notification = interventionNotification,
+                                message = interventionMessage,
+                                durationSeconds = interventionDuration.toIntOrNull() ?: 0,
+                                gameType = gt,
+                                phoneTaskType = interventionPhoneTask
+                            )
                         )
-                        if (!eventIsValid(updated)) { Toast.makeText(context, "Fill in all fields!", Toast.LENGTH_SHORT).show(); return@Button }
+                        if (!eventIsValid(updated)) {
+                            Toast.makeText(context, "Fill in all fields!", Toast.LENGTH_SHORT).show()
+                            return@Button
+                        }
                         onSave(updated); onDismiss()
                     }) { Text("Save") }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun TriggerSummaryRow(app: JITAIWizardApp) {
+    val experiment by app.experimentStore.active.collectAsState()
+    val triggers = experiment.triggers
+    if (triggers.isEmpty()) return
+
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        shape = MaterialTheme.shapes.small,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)) {
+            Text(
+                "Triggers",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = 4.dp)
+            )
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                triggers.forEach { trigger ->
+                    val kindLabel = when (trigger.kind) {
+                        is TriggerKind.Manual -> "Manual"
+                        is TriggerKind.RapidMovement -> "Rapid (${(trigger.kind as TriggerKind.RapidMovement).accelThreshold}g)"
+                        is TriggerKind.RepeatingMovement -> {
+                            val k = trigger.kind as TriggerKind.RepeatingMovement
+                            "Repeat ${k.minHz}–${k.maxHz} Hz"
+                        }
+                        is TriggerKind.HeartRate -> {
+                            val k = trigger.kind as TriggerKind.HeartRate
+                            "HR ${if (k.above) ">" else "<"} ${k.bpm}"
+                        }
+                    }
+                    FilterChip(
+                        selected = trigger.enabled,
+                        onClick = {},
+                        label = { Text("${trigger.name}  ·  $kindLabel", fontSize = 11.sp) }
+                    )
                 }
             }
         }

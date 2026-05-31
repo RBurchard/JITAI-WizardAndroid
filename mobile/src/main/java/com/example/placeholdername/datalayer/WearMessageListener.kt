@@ -5,7 +5,10 @@ import android.widget.Toast
 import com.example.jitaicompanion.convention.Protocol
 import com.example.jitaicompanion.convention.models.WatchDataBatch
 import com.BWPStudio.JITAIWizard.JITAIWizardApp
+import com.BWPStudio.JITAIWizard.experiment.InterventionResponse
+import com.BWPStudio.JITAIWizard.experiment.InterventionResponseBus
 import com.BWPStudio.JITAIWizard.experiment.LogEvent
+import com.BWPStudio.JITAIWizard.experiment.SessionLogStore
 import com.BWPStudio.JITAIWizard.server.ServerState
 import com.google.android.gms.wearable.MessageEvent
 import com.google.android.gms.wearable.Node
@@ -16,6 +19,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonPrimitive
 
 class WearMessageListener : WearableListenerService() {
 
@@ -65,6 +69,21 @@ class WearMessageListener : WearableListenerService() {
 
         reactionMs?.let { ServerState.lastReactionTimeMs = it }
         ServerState.lastAction = data
+        scope.launch {
+            InterventionResponseBus.emit(
+                InterventionResponse(
+                    ts = System.currentTimeMillis(),
+                    payload = data,
+                    reactionMs = reactionMs
+                )
+            )
+            val escaped = JsonPrimitive(data).toString()
+            SessionLogStore.append(
+                source = "watch",
+                kind = "intervention-response",
+                payloadJson = "{\"payload\":$escaped,\"reactionMs\":${reactionMs ?: "null"}}"
+            )
+        }
         Log.d("WearMessageListener", "Response: $data, reaction: ${reactionMs}ms")
     }
 

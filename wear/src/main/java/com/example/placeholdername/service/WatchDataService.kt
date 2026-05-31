@@ -41,6 +41,11 @@ class WatchDataService : Service(), SensorEventListener {
         private const val CHANNEL_ID = "watch_data_channel"
         private const val NOTIFICATION_ID = 1001
         private const val BATCH_INTERVAL_MS = 100L
+        // Cap motion snapshots to ~50 Hz so faster sensor HALs don't over-produce.
+        private const val MOTION_SAMPLE_MIN_INTERVAL_MS = 18L
+        // Hard ceiling on buffered snapshots so a stalled batch loop can never
+        // approach the 100 KB Wearable message cap (~250 bytes/snapshot).
+        private const val MAX_BUFFERED_SNAPSHOTS = 600
 
         private val _isRunning = MutableStateFlow(false)
         val isRunning: StateFlow<Boolean> = _isRunning.asStateFlow()
@@ -67,6 +72,7 @@ class WatchDataService : Service(), SensorEventListener {
     private var latestRotationW = 0f
     private var latestBarometer = 0f
     private var latestLight = 0f
+    private var lastMotionSnapshotMs = 0L
     private var batchJob: Job? = null
     private var sampleJob: Job? = null
     private val serviceScope = CoroutineScope(Dispatchers.IO)
@@ -235,8 +241,19 @@ class WatchDataService : Service(), SensorEventListener {
                 latestAccelX = event.values[0]
                 latestAccelY = event.values[1]
                 latestAccelZ = event.values[2]
-                // Do NOT snapshot here — accelerometer fires at ~50–100 Hz and would
-                // overflow the 100 KB Wearable message cap. HR events snapshot instead.
+                // Accelerometer is the highest-rate motion sensor; drive the motion
+                // stream from it (decimated to ~50 Hz) so the ControlStation can
+                // reconstruct fast gestures. The batch loop flushes every 100 ms,
+                // so this adds only ~5–6 snapshots per batch.
+                val now = System.currentTimeMillis()
+                if (now - lastMotionSnapshotMs >= MOTION_SAMPLE_MIN_INTERVAL_MS) {
+                    lastMotionSnapshotMs = now
+                    snapshotBuffer.add(buildSnapshot())
+                    // Safety valve in case the batch loop stalls.
+                    while (snapshotBuffer.size > MAX_BUFFERED_SNAPSHOTS) {
+                        snapshotBuffer.removeAt(0)
+                    }
+                }
             }
         }
     }

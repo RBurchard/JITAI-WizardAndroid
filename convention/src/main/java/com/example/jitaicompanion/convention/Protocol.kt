@@ -10,4 +10,11 @@ object Protocol {
     const val PATH_PHONE_TASK = "/phone/task"
     const val KEY_INTERVENTION = "intervention"
     const val HTTP_PORT = 8080
+
+    const val PATH_EXPERIMENT = "/experiment"
+    const val PATH_LOGS = "/logs"
+    const val PATH_EXPERIMENT_CONTROL = "/experiment/control"
+    const val PATH_TRIGGER_FIRE = "/trigger/fire"
+    const val PATH_EVENTS_WS = "/events"
+    const val ETAG_HEADER = "X-Experiment-Etag"
 }

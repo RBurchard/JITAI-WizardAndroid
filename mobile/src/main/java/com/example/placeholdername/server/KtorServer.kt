@@ -3,10 +3,16 @@ package com.BWPStudio.JITAIWizard.server
 import android.content.Context
 import android.util.Log
 import com.example.jitaicompanion.convention.Protocol
+import com.BWPStudio.JITAIWizard.JITAIWizardApp
 import com.BWPStudio.JITAIWizard.server.routes.dataRoute
+import com.BWPStudio.JITAIWizard.server.routes.eventsWsRoute
+import com.BWPStudio.JITAIWizard.server.routes.experimentControlRoute
+import com.BWPStudio.JITAIWizard.server.routes.experimentRoute
+import com.BWPStudio.JITAIWizard.server.routes.logsRoute
 import com.BWPStudio.JITAIWizard.server.routes.participantRoute
 import com.BWPStudio.JITAIWizard.server.routes.statusRoute
 import com.BWPStudio.JITAIWizard.server.routes.streamRoute
+import com.BWPStudio.JITAIWizard.server.routes.triggerFireRoute
 import com.BWPStudio.JITAIWizard.server.routes.triggerRoute
 import com.BWPStudio.JITAIWizard.server.routes.triviaRoute
 import io.ktor.serialization.kotlinx.json.*
@@ -37,12 +43,18 @@ class KtorServer(private val context: Context) {
                     timeout = Duration.ofSeconds(30).toKotlinDuration()
                 }
                 routing {
+                    val app = context.applicationContext as JITAIWizardApp
                     triggerRoute(context)
                     statusRoute()
                     dataRoute()
                     participantRoute()
                     triviaRoute()
                     streamRoute()
+                    experimentRoute(app)
+                    experimentControlRoute(app)
+                    logsRoute()
+                    triggerFireRoute()
+                    eventsWsRoute(app)
                 }
             }.start(wait = false)
             Log.d("KtorServer", "HTTP server started on port ${Protocol.HTTP_PORT}")

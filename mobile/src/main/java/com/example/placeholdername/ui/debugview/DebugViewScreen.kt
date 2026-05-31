@@ -9,11 +9,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.BWPStudio.JITAIWizard.JITAIWizardApp
 import com.BWPStudio.JITAIWizard.datalayer.WearMessageSender
+import com.BWPStudio.JITAIWizard.experiment.EngineStatus
 import com.BWPStudio.JITAIWizard.server.ServerState
+import com.BWPStudio.JITAIWizard.triggers.ManualTriggerSource
 import com.google.android.gms.wearable.Node
 import com.google.android.gms.wearable.Wearable
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
@@ -49,6 +53,8 @@ fun DebugViewScreen(onBack: () -> Unit) {
         }
 
         WatchStatusBar()
+        EngineStatusChips()
+        TriggerQuickFireRow()
 
         TabRow(selectedTabIndex = selectedTab) {
             tabs.forEachIndexed { index, title ->
@@ -130,6 +136,61 @@ private fun WatchStatusBar() {
                 contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
             ) {
                 Text("Ping", fontSize = 11.sp)
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun EngineStatusChips() {
+    val context = LocalContext.current
+    val app = context.applicationContext as JITAIWizardApp
+    val state by app.experimentEngine.state.collectAsState()
+    val statusColor = when (state.status) {
+        EngineStatus.RUNNING -> Color(0xFF2E7D32)
+        EngineStatus.PAUSED -> Color(0xFFF9A825)
+        EngineStatus.FINISHED -> MaterialTheme.colorScheme.primary
+        else -> Color.Gray
+    }
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        AssistChip(onClick = {}, label = { Text("Engine: ${state.status.name}", fontSize = 11.sp) },
+            colors = AssistChipDefaults.assistChipColors(labelColor = statusColor))
+        AssistChip(onClick = {}, label = { Text("Mode: ${state.mode.name}", fontSize = 11.sp) })
+        state.currentEvent?.let { ev ->
+            AssistChip(onClick = {}, label = { Text("Event: ${ev.type}", fontSize = 11.sp) })
+        }
+        state.runId?.let { rid ->
+            AssistChip(onClick = {}, label = { Text("Run: ${rid.take(8)}", fontSize = 10.sp) })
+        }
+    }
+}
+
+@Composable
+private fun TriggerQuickFireRow() {
+    val context = LocalContext.current
+    val app = context.applicationContext as JITAIWizardApp
+    val triggers by app.experimentStore.active.collectAsState()
+    val manualTriggers = triggers.triggers.filter {
+        it.kind is com.example.jitaicompanion.convention.models.TriggerKind.Manual
+    }
+    if (manualTriggers.isEmpty()) return
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text("Triggers:", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        manualTriggers.forEach { t ->
+            FilledTonalButton(
+                onClick = { ManualTriggerSource.fire(t.id, source = "manual-phone", details = t.name) },
+                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+            ) {
+                Text("Fire ${t.name}", fontSize = 11.sp)
             }
         }
     }
