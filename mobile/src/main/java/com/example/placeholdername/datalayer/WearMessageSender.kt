@@ -193,6 +193,28 @@ class WearMessageSender(private val context: Context) {
         }
     }
 
+    fun sendExit(onError: ((String) -> Unit)? = null) {
+        CoroutineScope(Dispatchers.IO).launch {
+            val nodes = try {
+                resolveNodes()
+            } catch (e: Exception) {
+                reportError(buildFailureMessage("Failed to reach watch", e), onError)
+                return@launch
+            }
+            if (nodes.isEmpty()) {
+                reportError(NO_WEAR_MESSAGE, onError)
+                return@launch
+            }
+            nodes.forEach { node ->
+                try {
+                    messageClient.sendMessage(node.id, Protocol.PATH_EXIT, ByteArray(0)).await()
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to send exit to ${node.id}", e)
+                }
+            }
+        }
+    }
+
     private fun buildFailureMessage(prefix: String, error: Exception): String {
         val reason = error.message?.takeIf { it.isNotBlank() } ?: "unknown error"
         return "$prefix: $reason"

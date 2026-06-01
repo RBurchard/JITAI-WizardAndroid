@@ -32,6 +32,11 @@ import kotlinx.coroutines.delay
 
 abstract class MicrogameActivity : ComponentActivity() {
 
+    companion object {
+        @Volatile private var currentInstance: MicrogameActivity? = null
+        fun finishCurrent() { currentInstance?.finish() }
+    }
+
     protected lateinit var sender: WearMessageSender
     protected lateinit var vibrator: Vibrator
     private var isCompleted = false
@@ -44,6 +49,7 @@ abstract class MicrogameActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        currentInstance = this
         sender = WearMessageSender(this)
         vibrator = getSystemService(Vibrator::class.java)
 
@@ -86,6 +92,13 @@ abstract class MicrogameActivity : ComponentActivity() {
             }
         }
     }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        if (currentInstance === this) currentInstance = null
+    }
+
+    protected fun resetCompletion() { isCompleted = false }
 
     protected fun onGameComplete(response: String) {
         if (isCompleted) return

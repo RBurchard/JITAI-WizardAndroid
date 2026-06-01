@@ -250,6 +250,8 @@ class ExperimentEngine(
                     is EventKind.WaitForTrigger,
                     EventKind.WaitForPrevious -> {
                         _state.value = s.copy(elapsedSecInEvent = newElapsed)
+                        val timeout = if (event.duration > 0f) event.duration else 60f
+                        if (newElapsed >= timeout && s.mode == EngineMode.AUTO) advance("timeout")
                     }
                 }
                 if (s.elapsedSecInEvent.toInt() != _state.value.elapsedSecInEvent.toInt()) emitState()

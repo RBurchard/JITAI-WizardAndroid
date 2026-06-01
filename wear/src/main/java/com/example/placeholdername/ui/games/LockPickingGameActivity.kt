@@ -23,7 +23,9 @@ import androidx.compose.ui.unit.sp
 import androidx.wear.compose.material3.Button
 import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.Text
+import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlin.math.PI
 import kotlin.math.atan2
 import kotlin.math.sqrt
@@ -174,6 +176,7 @@ class LockPickingGameActivity : MicrogameActivity(), SensorEventListener {
         val targetSweep = 60f
         var tapped by remember { mutableStateOf(false) }
         var hitResult by remember { mutableStateOf("") }
+        val scope = rememberCoroutineScope()
 
         LaunchedEffect(Unit) {
             val revolution = 3000L
@@ -220,6 +223,10 @@ class LockPickingGameActivity : MicrogameActivity(), SensorEventListener {
                             onComplete()
                         } else {
                             hitResult = "Too early/late!"
+                            scope.launch {
+                                delay(1500L)
+                                hitResult = ""
+                            }
                         }
                     }) { Text("TAP!") }
                 }

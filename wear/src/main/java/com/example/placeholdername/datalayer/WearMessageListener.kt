@@ -13,6 +13,7 @@ import com.example.jitaicompanion.convention.models.Intervention
 import com.example.jitaicompanion.service.WatchDataService
 import com.example.jitaicompanion.ui.InterventionActivity
 import com.example.jitaicompanion.ui.games.LockPickingGameActivity
+import com.example.jitaicompanion.ui.games.MicrogameActivity
 import com.example.jitaicompanion.ui.games.SimonSaysGameActivity
 import com.example.jitaicompanion.ui.games.StandStillGameActivity
 import com.example.jitaicompanion.ui.games.TriviaGameActivity
@@ -32,6 +33,7 @@ class WearMessageListener : WearableListenerService() {
             Protocol.PATH_INTERVENTION -> handleIntervention(String(event.data))
             Protocol.PATH_PHONE_TASK -> showCheckPhoneScreen()
             Protocol.PATH_PING -> handlePing(String(event.data))
+            Protocol.PATH_EXIT -> handleExit()
         }
     }
 
@@ -63,6 +65,7 @@ class WearMessageListener : WearableListenerService() {
 
         mainHandler.post {
             InterventionActivity.finishCurrent()
+            MicrogameActivity.finishCurrent()
 
             val activityClass = when (intervention.gameType) {
                 GameType.LOCK_PICKING -> LockPickingGameActivity::class.java
@@ -80,6 +83,14 @@ class WearMessageListener : WearableListenerService() {
             }
             startActivity(intent)
             Log.d("WearMessageListener", "Started ${targetClass.simpleName}")
+        }
+    }
+
+    private fun handleExit() {
+        Log.d("WearMessageListener", "Exit command received")
+        mainHandler.post {
+            MicrogameActivity.finishCurrent()
+            InterventionActivity.finishCurrent()
         }
     }
 

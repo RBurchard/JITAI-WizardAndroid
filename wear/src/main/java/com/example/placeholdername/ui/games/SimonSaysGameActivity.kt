@@ -13,6 +13,7 @@ import androidx.compose.ui.unit.sp
 import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.Text
 import kotlinx.coroutines.delay
+import androidx.compose.runtime.key
 
 class SimonSaysGameActivity : MicrogameActivity() {
 
@@ -25,74 +26,87 @@ class SimonSaysGameActivity : MicrogameActivity() {
 
     @Composable
     override fun GameContent() {
-        var sequence by remember { mutableStateOf(listOf(quadrantColors.indices.random())) }
-        var phase by remember { mutableStateOf(Phase.SHOW) }
-        var playerInput by remember { mutableStateOf(listOf<Int>()) }
-        var highlightedIndex by remember { mutableStateOf(-1) }
-        var resultText by remember { mutableStateOf("Watch carefully!") }
-        var round by remember { mutableStateOf(1) }
-        val totalRounds = 4
+        var gameRestartCount by remember { mutableIntStateOf(0) }
 
-        LaunchedEffect(phase, sequence) {
-            if (phase == Phase.SHOW) {
-                delay(600L)
-                for (idx in sequence) {
-                    highlightedIndex = idx
-                    vibratePattern(longArrayOf(0, 100), -1)
-                    delay(500L)
-                    vibrator.cancel()
-                    highlightedIndex = -1
-                    delay(300L)
+        key(gameRestartCount) {
+            var sequence by remember { mutableStateOf(listOf(quadrantColors.indices.random())) }
+            var phase by remember { mutableStateOf(Phase.SHOW) }
+            var playerInput by remember { mutableStateOf(listOf<Int>()) }
+            var highlightedIndex by remember { mutableStateOf(-1) }
+            var resultText by remember { mutableStateOf("Watch carefully!") }
+            var round by remember { mutableStateOf(1) }
+            var shouldRestart by remember { mutableStateOf(false) }
+            val totalRounds = 4
+
+            LaunchedEffect(shouldRestart) {
+                if (shouldRestart) {
+                    delay(1500L)
+                    resetCompletion()
+                    gameRestartCount++
                 }
-                phase = Phase.INPUT
-                resultText = "Your turn! Round $round/$totalRounds"
             }
-        }
 
-        MaterialTheme {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(text = resultText, fontSize = 11.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(4.dp))
-                    Spacer(Modifier.height(4.dp))
-                    // 2×2 grid of colored squares
-                    Column {
-                        for (row in 0..1) {
-                            Row {
-                                for (col in 0..1) {
-                                    val idx = row * 2 + col
-                                    val isLit = highlightedIndex == idx
-                                    Box(
-                                        modifier = Modifier
-                                            .size(52.dp)
-                                            .padding(3.dp)
-                                            .background(
-                                                if (isLit) quadrantColors[idx]
-                                                else quadrantColors[idx].copy(alpha = 0.35f)
-                                            )
-                                            .clickable(enabled = phase == Phase.INPUT) {
-                                                val newInput = playerInput + idx
-                                                playerInput = newInput
-                                                vibratePulse()
-                                                val expectedSoFar = sequence.take(newInput.size)
-                                                if (newInput != expectedSoFar) {
-                                                    phase = Phase.RESULT
-                                                    resultText = "Wrong!"
-                                                    onGameFailed("SimonSays FAIL")
-                                                } else if (newInput.size == sequence.size) {
-                                                    if (round >= totalRounds) {
+            LaunchedEffect(phase, sequence) {
+                if (phase == Phase.SHOW) {
+                    delay(600L)
+                    for (idx in sequence) {
+                        highlightedIndex = idx
+                        vibratePattern(longArrayOf(0, 100), -1)
+                        delay(500L)
+                        vibrator.cancel()
+                        highlightedIndex = -1
+                        delay(300L)
+                    }
+                    phase = Phase.INPUT
+                    resultText = "Your turn! Round $round/$totalRounds"
+                }
+            }
+
+            MaterialTheme {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(text = resultText, fontSize = 11.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(4.dp))
+                        Spacer(Modifier.height(4.dp))
+                        // 2×2 grid of colored squares
+                        Column {
+                            for (row in 0..1) {
+                                Row {
+                                    for (col in 0..1) {
+                                        val idx = row * 2 + col
+                                        val isLit = highlightedIndex == idx
+                                        Box(
+                                            modifier = Modifier
+                                                .size(52.dp)
+                                                .padding(3.dp)
+                                                .background(
+                                                    if (isLit) quadrantColors[idx]
+                                                    else quadrantColors[idx].copy(alpha = 0.35f)
+                                                )
+                                                .clickable(enabled = phase == Phase.INPUT) {
+                                                    val newInput = playerInput + idx
+                                                    playerInput = newInput
+                                                    vibratePulse()
+                                                    val expectedSoFar = sequence.take(newInput.size)
+                                                    if (newInput != expectedSoFar) {
                                                         phase = Phase.RESULT
-                                                        resultText = "Perfect!"
-                                                        onGameComplete("SimonSays OK")
-                                                    } else {
-                                                        round++
-                                                        sequence = sequence + listOf(quadrantColors.indices.random())
-                                                        playerInput = listOf()
-                                                        phase = Phase.SHOW
-                                                        resultText = "Good! Watch..."
+                                                        resultText = "Wrong! Restarting..."
+                                                        shouldRestart = true
+                                                    } else if (newInput.size == sequence.size) {
+                                                        if (round >= totalRounds) {
+                                                            phase = Phase.RESULT
+                                                            resultText = "Perfect!"
+                                                            onGameComplete("SimonSays OK")
+                                                        } else {
+                                                            round++
+                                                            sequence = sequence + listOf(quadrantColors.indices.random())
+                                                            playerInput = listOf()
+                                                            phase = Phase.SHOW
+                                                            resultText = "Good! Watch..."
+                                                        }
                                                     }
                                                 }
-                                            }
-                                    )
+                                        )
+                                    }
                                 }
                             }
                         }

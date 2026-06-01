@@ -52,7 +52,7 @@ fun DebugViewScreen(onBack: () -> Unit) {
             }
         }
 
-        WatchStatusBar()
+        WatchStatusBar(onWearError = { wearErrorMessage = it })
         EngineStatusChips()
         TriggerQuickFireRow()
 
@@ -71,7 +71,7 @@ fun DebugViewScreen(onBack: () -> Unit) {
 }
 
 @Composable
-private fun WatchStatusBar() {
+private fun WatchStatusBar(onWearError: (String) -> Unit = {}) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
@@ -136,6 +136,12 @@ private fun WatchStatusBar() {
                 contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
             ) {
                 Text("Ping", fontSize = 11.sp)
+            }
+            TextButton(
+                onClick = { WearMessageSender(context).sendExit(onError = onWearError) },
+                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+            ) {
+                Text("Close Watch", fontSize = 11.sp)
             }
         }
     }

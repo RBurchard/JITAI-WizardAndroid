@@ -8,6 +8,7 @@ object Protocol {
     const val PATH_PONG = "/pong"
     const val PATH_GAME_RESULT = "/game/result"
     const val PATH_PHONE_TASK = "/phone/task"
+    const val PATH_EXIT = "/exit"
     const val KEY_INTERVENTION = "intervention"
     const val HTTP_PORT = 8080
 

@@ -13,7 +13,7 @@ import java.util.UUID
 
 class ExperimentStore(context: Context) {
     private val file = File(context.filesDir, "active_experiment.json")
-    private val json = Json { ignoreUnknownKeys = true; coerceInputValues = true; prettyPrint = false }
+    private val json = Json { ignoreUnknownKeys = true; coerceInputValues = true; prettyPrint = false; encodeDefaults = true }
 
     private val _active = MutableStateFlow(loadInitial())
     val active: StateFlow<Experiment> = _active.asStateFlow()

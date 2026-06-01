@@ -36,7 +36,7 @@ class KtorServer(private val context: Context) {
         try {
             server = embeddedServer(Netty, port = Protocol.HTTP_PORT) {
                 install(ContentNegotiation) {
-                    json(Json { ignoreUnknownKeys = true; coerceInputValues = true })
+                    json(Json { ignoreUnknownKeys = true; coerceInputValues = true; encodeDefaults = true })
                 }
                 install(WebSockets) {
                     pingPeriod = Duration.ofSeconds(15).toKotlinDuration()
