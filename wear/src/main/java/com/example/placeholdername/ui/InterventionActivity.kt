@@ -1,5 +1,6 @@
 package com.example.jitaicompanion.ui
 
+import android.content.Intent
 import android.media.Ringtone
 import android.media.RingtoneManager
 import android.os.Bundle
@@ -19,7 +20,6 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -30,9 +30,14 @@ import androidx.wear.compose.material3.Button
 import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.Text
 import com.example.jitaicompanion.convention.Protocol
+import com.example.jitaicompanion.convention.models.GameType
 import com.example.jitaicompanion.convention.models.Intervention
 import com.example.jitaicompanion.convention.models.NotificationType
 import com.example.jitaicompanion.datalayer.WearMessageSender
+import com.example.jitaicompanion.ui.games.LockPickingGameActivity
+import com.example.jitaicompanion.ui.games.SimonSaysGameActivity
+import com.example.jitaicompanion.ui.games.StandStillGameActivity
+import com.example.jitaicompanion.ui.games.TriviaGameActivity
 import kotlinx.coroutines.delay
 import kotlinx.serialization.json.Json
 
@@ -50,9 +55,6 @@ class InterventionActivity : ComponentActivity() {
         super.onDestroy()
         if (currentInstance === this) currentInstance = null
         // `vibrator` is only initialized past the early-return guards in onCreate.
-        // Guard against UninitializedPropertyAccessException when the activity is
-        // finished early (e.g. a Stop/Cancel intervention) — this previously crashed
-        // the whole watch app whenever an interaction was force-stopped.
         if (::vibrator.isInitialized) vibrator.cancel()
         ringtone?.stop()
         ringtone = null
@@ -75,8 +77,6 @@ class InterventionActivity : ComponentActivity() {
 
         if (intervention.type == "Stop" || intervention.durationSeconds == 0) { finish(); return }
 
-        // If the researcher sent an intervention without any message text, fall back to a
-        // sensible default so a first-time user still sees a meaningful prompt.
         if (intervention.message.isBlank()) {
             intervention.message = defaultMessageFor(intervention.type)
         }
@@ -85,31 +85,68 @@ class InterventionActivity : ComponentActivity() {
         applyVibration(intervention.notification)
 
         setContent {
-            val sender = WearMessageSender(LocalContext.current)
-            MaterialTheme {
-                LaunchedEffect(Unit) {
-                    delay(intervention.durationSeconds * 1000L)
-                    sender.sendResponse("timeout")
+            val sender = remember { WearMessageSender(this) }
+
+            // Called when the user positively acknowledges the intervention (OK / Yes / timer done).
+            // If a microgame is attached, launch it now — the text/vibration has already been shown.
+            // Otherwise just send the response and finish.
+            val onAccepted: (String) -> Unit = { response ->
+                if (intervention.gameType != null) {
+                    launchGame(jsonStr, intervention.gameType!!)
+                } else {
+                    sender.sendResponse(response)
                     finish()
                 }
+            }
+
+            // Called when the user explicitly declines (Yes/No → "No").
+            // Never launches a game — always cancels the interaction cleanly.
+            val onDeclined: (String) -> Unit = { response ->
+                sender.sendResponse(response)
+                finish()
+            }
+
+            MaterialTheme {
+                // Global timeout: for Yes/No the user didn't respond → treat as a decline (no game).
+                // For all other types the notification period elapsed → proceed to game if attached.
+                LaunchedEffect(Unit) {
+                    delay(intervention.durationSeconds * 1000L)
+                    if (intervention.type == "Yes/No") onDeclined("timeout") else onAccepted("timeout")
+                }
                 when (intervention.type) {
-                    "Timer" -> TimerScreen(intervention, sender) { finish() }
-                    "Yes/No" -> YesNoScreen(intervention, sender) { finish() }
-                    else -> TextScreen(intervention, sender) { finish() }
+                    "Timer"  -> TimerScreen(intervention, onAccepted)
+                    "Yes/No" -> YesNoScreen(intervention, onAccepted, onDeclined)
+                    else     -> TextScreen(intervention, onAccepted)
                 }
             }
         }
     }
 
+    /**
+     * Starts the appropriate microgame activity and finishes this one.
+     * The full intervention JSON is forwarded so the game can read message/triviaQuestion/etc.
+     */
+    private fun launchGame(jsonStr: String, gameType: GameType) {
+        val gameClass = when (gameType) {
+            GameType.LOCK_PICKING -> LockPickingGameActivity::class.java
+            GameType.SIMON_SAYS   -> SimonSaysGameActivity::class.java
+            GameType.TRIVIA       -> TriviaGameActivity::class.java
+            GameType.STAND_STILL  -> StandStillGameActivity::class.java
+        }
+        startActivity(Intent(this, gameClass).apply {
+            putExtra(Protocol.KEY_INTERVENTION, jsonStr)
+        })
+        finish()
+    }
+
     /** Fallback prompt shown when an intervention arrives with no message text. */
     private fun defaultMessageFor(type: String): String = when (type) {
         "Yes/No" -> "Are you doing okay right now?"
-        "Timer" -> "Take a short, calm break."
-        else -> "Take a mindful moment — notice how you feel."
+        "Timer"  -> "Take a short, calm break."
+        else     -> "Take a mindful moment — notice how you feel."
     }
 
     private fun applyVibration(type: NotificationType) {
-        // Vibration
         when (type) {
             NotificationType.VIBRATION1, NotificationType.VIBRATION_SOUND ->
                 vibrator.vibrate(VibrationEffect.createWaveform(longArrayOf(0, 200, 100, 200, 100, 400), -1))
@@ -119,7 +156,6 @@ class InterventionActivity : ComponentActivity() {
                 vibrator.vibrate(VibrationEffect.createWaveform(longArrayOf(0, 400, 100, 400), 0))
             else -> {}
         }
-        // Sound
         when (type) {
             NotificationType.SOUND, NotificationType.VIBRATION_SOUND, NotificationType.VIBRATION_SOUND2 -> {
                 val uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
@@ -137,33 +173,59 @@ class InterventionActivity : ComponentActivity() {
     }
 }
 
+// ── Screen composables ────────────────────────────────────────────────────────
+
 @Composable
-private fun TextScreen(intervention: Intervention, sender: WearMessageSender, onFinish: () -> Unit) {
+private fun TextScreen(
+    intervention: Intervention,
+    onAccepted: (String) -> Unit
+) {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            AutoResizeText(text = intervention.message, maxLines = 3, modifier = Modifier.fillMaxWidth().padding(5.dp))
+            AutoResizeText(
+                text = intervention.message,
+                maxLines = 3,
+                modifier = Modifier.fillMaxWidth().padding(5.dp)
+            )
             Spacer(Modifier.height(16.dp))
-            Button(onClick = { sender.sendResponse("Done"); onFinish() }) { Text("OK") }
+            val label = if (intervention.gameType != null) "Ready!" else "OK"
+            Button(onClick = { onAccepted("Done") }) { Text(label) }
         }
     }
 }
 
 @Composable
-private fun YesNoScreen(intervention: Intervention, sender: WearMessageSender, onFinish: () -> Unit) {
+private fun YesNoScreen(
+    intervention: Intervention,
+    onAccepted: (String) -> Unit,
+    onDeclined: (String) -> Unit
+) {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            AutoResizeText(text = intervention.message, maxLines = 3, modifier = Modifier.fillMaxWidth().padding(5.dp))
+            AutoResizeText(
+                text = intervention.message,
+                maxLines = 3,
+                modifier = Modifier.fillMaxWidth().padding(5.dp)
+            )
             Spacer(Modifier.height(12.dp))
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Button(onClick = { sender.sendResponse("Yes"); onFinish() }) { Text("Yes") }
-                Button(onClick = { sender.sendResponse("No"); onFinish() }) { Text("No") }
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                // "Yes" proceeds to the game (if any) or sends the response.
+                Button(onClick = { onAccepted("Yes") }) { Text("Yes") }
+                // "No" always cancels — the game (if any) is not launched.
+                Button(onClick = { onDeclined("No") }) { Text("No") }
             }
         }
     }
 }
 
 @Composable
-private fun TimerScreen(intervention: Intervention, sender: WearMessageSender, onFinish: () -> Unit) {
+private fun TimerScreen(
+    intervention: Intervention,
+    onAccepted: (String) -> Unit
+) {
     var progress by remember { mutableStateOf(0f) }
     val animatedProgress by animateFloatAsState(targetValue = progress)
 
@@ -182,9 +244,11 @@ private fun TimerScreen(intervention: Intervention, sender: WearMessageSender, o
         progress = animatedProgress,
         text = intervention.message,
         timerText = "$remaining s",
-        onOk = { sender.sendResponse("Timer OK"); onFinish() }
+        onOk = { onAccepted("Timer OK") }
     )
 }
+
+// ── Shared UI helpers ─────────────────────────────────────────────────────────
 
 @Composable
 fun CircularProgressWithCenter(progress: Float, text: String, timerText: String, onOk: () -> Unit) {

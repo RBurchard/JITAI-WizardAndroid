@@ -8,16 +8,11 @@ import android.os.Looper
 import android.util.Log
 import androidx.core.content.ContextCompat
 import com.example.jitaicompanion.convention.Protocol
-import com.example.jitaicompanion.convention.models.GameType
 import com.example.jitaicompanion.convention.models.Intervention
 import com.example.jitaicompanion.convention.models.NotificationType
 import com.example.jitaicompanion.service.WatchDataService
 import com.example.jitaicompanion.ui.InterventionActivity
-import com.example.jitaicompanion.ui.games.LockPickingGameActivity
 import com.example.jitaicompanion.ui.games.MicrogameActivity
-import com.example.jitaicompanion.ui.games.SimonSaysGameActivity
-import com.example.jitaicompanion.ui.games.StandStillGameActivity
-import com.example.jitaicompanion.ui.games.TriviaGameActivity
 import com.google.android.gms.wearable.MessageEvent
 import com.google.android.gms.wearable.WearableListenerService
 import kotlinx.serialization.json.Json
@@ -82,22 +77,15 @@ class WearMessageListener : WearableListenerService() {
             InterventionActivity.finishCurrent()
             MicrogameActivity.finishCurrent()
 
-            val activityClass = when (intervention.gameType) {
-                GameType.LOCK_PICKING -> LockPickingGameActivity::class.java
-                GameType.SIMON_SAYS -> SimonSaysGameActivity::class.java
-                GameType.TRIVIA -> TriviaGameActivity::class.java
-                GameType.STAND_STILL -> StandStillGameActivity::class.java
-                null -> null
-            }
-
-            val targetClass = activityClass ?: InterventionActivity::class.java
-
-            val intent = Intent(applicationContext, targetClass).apply {
+            // Always route through InterventionActivity so the text + vibration + notification
+            // are always shown first. InterventionActivity will launch the game (if any) once
+            // the user has acknowledged the prompt.
+            val intent = Intent(applicationContext, InterventionActivity::class.java).apply {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
                 putExtra(Protocol.KEY_INTERVENTION, data)
             }
             startActivity(intent)
-            Log.d("WearMessageListener", "Started ${targetClass.simpleName}")
+            Log.d("WearMessageListener", "Started InterventionActivity (gameType=${intervention.gameType})")
         }
     }
 
