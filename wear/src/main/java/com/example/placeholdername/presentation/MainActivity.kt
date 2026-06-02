@@ -211,7 +211,13 @@ fun WearApp(onOdiClick: () -> Unit) {
                             onOdiClick()
                         }
                     ) {
-                        OdiCharacter(state = if (heartRate > 0) OdiAnimationState.IDLE else OdiAnimationState.THINKING)
+                        OdiCharacter(
+                            state = when {
+                                heartRate > 120f -> OdiAnimationState.CONCERNED
+                                heartRate > 0f -> OdiAnimationState.IDLE
+                                else -> OdiAnimationState.THINKING
+                            }
+                        )
                         Spacer(Modifier.height(8.dp))
                         Text(
                             text = if (isRunning) "Odi is watching" else "Hi, I'm Odi",

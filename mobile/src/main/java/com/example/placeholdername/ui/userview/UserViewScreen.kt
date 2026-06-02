@@ -1,6 +1,7 @@
 package com.BWPStudio.JITAIWizard.ui.userview
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -15,8 +16,11 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.BWPStudio.JITAIWizard.ui.components.LongPressProgressButton
+import com.BWPStudio.JITAIWizard.ui.odi.OdiAnimationState
 import com.BWPStudio.JITAIWizard.ui.odi.OdiCharacter
+import com.BWPStudio.JITAIWizard.ui.odi.OdiConfetti
 import com.BWPStudio.JITAIWizard.ui.odi.OdiDialogues
+import kotlinx.coroutines.delay
 
 @Composable
 fun UserViewScreen(
@@ -24,30 +28,56 @@ fun UserViewScreen(
     viewModel: UserViewModel = viewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    val currentMessage = remember(state.odiState) { OdiDialogues.forState(state.odiState) }
 
-    Surface(
-        modifier = Modifier.fillMaxSize(),
-        color = Color(0xFF0D1B2A)
-    ) {
+    // Tapping ODI throws a little celebration.
+    var celebrating by remember { mutableStateOf(false) }
+    LaunchedEffect(celebrating) {
+        if (celebrating) { delay(2800); celebrating = false }
+    }
+
+    // ODI reacts to what's happening: an explicit mood wins, otherwise it naps
+    // while the watch is away and frets when the heart rate spikes.
+    val odiState = when {
+        celebrating -> OdiAnimationState.CELEBRATING
+        state.odiState != OdiAnimationState.IDLE -> state.odiState
+        !state.watchConnected -> OdiAnimationState.SLEEPING
+        state.lastBpm > 120 -> OdiAnimationState.CONCERNED
+        else -> OdiAnimationState.IDLE
+    }
+
+    // Re-roll ODI's line on every mood change and every few seconds of idling.
+    var messageTick by remember { mutableStateOf(0) }
+    LaunchedEffect(odiState) {
+        while (true) { delay(4200); messageTick++ }
+    }
+    val currentMessage = remember(odiState, messageTick) { OdiDialogues.forState(odiState) }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = Color(0xFF0D1B2A)
+        ) {
         Column(
             modifier = Modifier.fillMaxSize().padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Spacer(Modifier.height(32.dp))
 
-            // Odi character
-            OdiCharacter(state = state.odiState, size = 180.dp)
+            // Odi character — tap to make it celebrate
+            OdiCharacter(
+                state = odiState,
+                size = 180.dp,
+                modifier = Modifier.clickable(enabled = !celebrating) { celebrating = true }
+            )
 
             Spacer(Modifier.height(8.dp))
 
             // Odi name + message
             Text("O D I", color = Color(0xFF42A5F5), fontSize = 13.sp, letterSpacing = 6.sp, fontWeight = FontWeight.Light)
-            Text(
+            TypewriterText(
                 text = currentMessage,
                 color = Color.White.copy(alpha = 0.7f),
                 fontSize = 13.sp,
-                textAlign = TextAlign.Center,
                 modifier = Modifier.padding(horizontal = 24.dp)
             )
 
@@ -94,7 +124,38 @@ fun UserViewScreen(
                 fontSize = 10.sp
             )
         }
+        }
+
+        OdiConfetti(
+            active = odiState == OdiAnimationState.CELEBRATING,
+            modifier = Modifier.fillMaxSize()
+        )
     }
+}
+
+/** Reveals [text] one character at a time, retyping whenever the text changes. */
+@Composable
+private fun TypewriterText(
+    text: String,
+    modifier: Modifier = Modifier,
+    color: Color = Color.White,
+    fontSize: androidx.compose.ui.unit.TextUnit = 13.sp
+) {
+    var shown by remember(text) { mutableStateOf("") }
+    LaunchedEffect(text) {
+        shown = ""
+        for (i in text.indices) {
+            shown = text.substring(0, i + 1)
+            delay(28)
+        }
+    }
+    Text(
+        text = shown,
+        color = color,
+        fontSize = fontSize,
+        textAlign = TextAlign.Center,
+        modifier = modifier
+    )
 }
 
 @Composable

@@ -18,6 +18,7 @@ import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.Text
 import com.example.jitaicompanion.ui.odi.OdiAnimationState
 import com.example.jitaicompanion.ui.odi.OdiCharacter
+import com.example.jitaicompanion.ui.odi.OdiConfetti
 import kotlinx.coroutines.delay
 
 class PositiveFeedbackActivity : ComponentActivity() {
@@ -53,11 +54,12 @@ class PositiveFeedbackActivity : ComponentActivity() {
                         .background(Color(0xFF1B5E20)),
                     contentAlignment = Alignment.Center
                 ) {
+                    OdiConfetti(active = true, modifier = Modifier.fillMaxSize())
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center
                     ) {
-                        OdiCharacter(state = OdiAnimationState.CELEBRATING)
+                        OdiCharacter(state = OdiAnimationState.CELEBRATING, size = 120.dp)
                         Spacer(Modifier.height(6.dp))
                         Text(
                             text = "Odi says: $message",
