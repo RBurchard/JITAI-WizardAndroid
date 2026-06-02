@@ -185,11 +185,17 @@ The Ktor server runs on port 8080 and accepts connections from ControlStation (o
 | GET | /status | Returns watch connection state, session ID, uptime in seconds, and last BPM reading |
 | GET | /data | Returns session ID, participant label, last reaction time (ms), last heart rate, and last action string |
 | POST | /trigger | Accepts an intervention request (JSON), sends it to the watch, returns the intervention ID |
+| POST | /trigger/fire | Fires a manual trigger event by trigger ID |
 | GET | /participant | Returns the current participant info object |
-| POST | /participant | Sets participant info (id, sessionId, label, deviceIp) |
+| POST | /participant | Sets participant info (id, sessionId, label, deviceIp) — must be called by ControlStation before starting a session so that watch data is linked to the correct session row in the database |
+| GET | /experiment | Returns the current experiment configuration JSON; includes an ETag header for conflict detection |
+| PUT | /experiment | Replaces the experiment configuration; returns 409 if the client ETag does not match |
+| POST | /experiment/control | Sends a run command: start, auto, pause, stop, next, or prev |
+| GET | /logs?since=\{id\}&limit=\{n\} | Returns a page of session log entries with IDs greater than `since`; used by ControlStation as a polling fallback when the /events WebSocket is unavailable |
 | GET | /trivia | Returns the current list of trivia questions |
 | POST | /trivia | Replaces the trivia question bank with the provided list |
-| WS | /stream | WebSocket: streams WatchDataBatch JSON objects in real time as they arrive from the watch |
+| WS | /stream | WebSocket: streams WatchDataBatch JSON objects in real time as they arrive from the watch. ControlStation persists every batch into the `watch_data` table. |
+| WS | /events | WebSocket: streams WsEnvelope JSON objects for experiment state changes, log entries, trigger fires, and run/intervention lifecycle events. ControlStation uses these to populate `session_logs`, `experiment_runs`, and `distraction_runs`. |
 
 ### UDP Beacon
 
@@ -500,11 +506,17 @@ See the [HTTP Server](#http-server) section of the Phone Application chapter abo
 
 ## Logging and Data Export
 
+### Where sensor data is stored
+
+Raw sensor data (heart rate, accelerometer, gyroscope, rotation, barometer, light, steps) is **not stored locally on the phone**. It is streamed in real time to ControlStation over the `/stream` WebSocket and persisted in ControlStation's SQLite database (`%APPDATA%\OcdWizard\data.db`), table `watch_data`. If ControlStation is not connected when data arrives, those batches are lost (the in-memory relay buffer holds at most 64 batches).
+
+To export sensor data as a CSV, use the Export function in ControlStation. See the ControlStation README (JITAI-WizardControlStation, same GitHub account) for the full export format.
+
 ### Phone-Side Logs
 
 **Experiment logs**
 
-Written by `ExperimentLogger` to `Downloads/JITAI_WIZARD_logs/`. Filename: `{experimentName}_log_{participantName}_{timestamp}.tsv`.
+Written by `ExperimentLogger` to `Downloads/JITAI_WIZARD_logs/`. Filename: `{experimentName}_log_{participantName}_{timestamp}.tsv`. These are also forwarded to ControlStation via the `/events` WebSocket and stored in the `session_logs` table in the database.
 
 | Column | Description |
 |--------|-------------|
@@ -516,7 +528,7 @@ Written by `ExperimentLogger` to `Downloads/JITAI_WIZARD_logs/`. Filename: `{exp
 
 **Wear sync log**
 
-Written by `WearSyncLogger` to app-internal storage as `wear_sync_logs.tsv`. Useful for debugging communication issues.
+Written by `WearSyncLogger` to app-internal storage as `wear_sync_logs.tsv`. Useful for debugging communication issues between the phone and watch.
 
 | Column | Description |
 |--------|-------------|
@@ -527,10 +539,6 @@ Written by `WearSyncLogger` to app-internal storage as `wear_sync_logs.tsv`. Use
 | node_id | ID of the remote node (watch or phone) |
 | payload_bytes | Size of the message payload |
 | details | Free-text detail string |
-
-### ControlStation Logs
-
-All sensor data, interventions, and session metadata are stored in `%APPDATA%\OcdWizard\data.db`. Use the Export function in ControlStation to produce a CSV file for each session.
 
 ---
 

@@ -42,6 +42,7 @@ import com.example.jitaicompanion.convention.models.NotificationType
 import com.example.jitaicompanion.convention.models.PhoneTaskType
 import com.example.jitaicompanion.convention.models.TriggerKind
 import com.BWPStudio.JITAIWizard.JITAIWizardApp
+import com.BWPStudio.JITAIWizard.server.ServerState
 import com.BWPStudio.JITAIWizard.experiment.EngineMode
 import com.BWPStudio.JITAIWizard.experiment.Event
 import com.BWPStudio.JITAIWizard.experiment.LogEvent
@@ -73,7 +74,9 @@ fun ExperimentScreen(onWearError: (String) -> Unit = {}) {
     var running by rememberSaveable { mutableStateOf(false) }
     var settingsOpen by remember { mutableStateOf(false) }
     var experiment by remember { mutableStateOf(app.experimentStore.active.value.name) }
-    var participantId by remember { mutableStateOf("defaultParticipant") }
+    var participantId by remember {
+        mutableStateOf(ServerState.participantInfo?.label?.takeIf { it.isNotBlank() } ?: "defaultParticipant")
+    }
     var saveLogsBool by remember { mutableStateOf(true) }
     var eventToEdit by remember { mutableStateOf<Event?>(null) }
     var eventToHighlight by remember { mutableStateOf<Event?>(null) }

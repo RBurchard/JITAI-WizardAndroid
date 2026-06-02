@@ -37,7 +37,9 @@ data class EngineState(
     val waitingForActionId: String? = null,
     val waitingForTriggerId: String? = null,
     val randomWaitRemainingSec: Float? = null,
-    val runId: String? = null
+    val runId: String? = null,
+    // Non-null while WaitForPrevious is counting down its post-response delay.
+    val postResponseWaitRemainingSec: Float? = null,
 ) {
     val currentEvent: ExperimentEvent?
         get() = experiment?.events?.getOrNull(currentEventIndex)
@@ -85,12 +87,27 @@ class ExperimentEngine(
                     .onFailure { Log.e("ExperimentEngine", "encode response failed", it) }
                 if (s.status == EngineStatus.RUNNING) {
                     val waitingFor = s.waitingForActionId
-                    val advance = waitingFor != null && (
+                    val shouldAdvance = waitingFor != null && (
                         waitingFor == "*" ||           // WaitForPrevious: any response
                         resp.actionId == null ||       // legacy: null actionId matches any
                         resp.actionId == waitingFor    // WaitForAction: exact id match
                     )
-                    if (advance) advance("action:$waitingFor")
+                    if (shouldAdvance) {
+                        val event = s.currentEvent
+                        if (event?.kind == EventKind.WaitForPrevious
+                            && event.duration > 0f
+                            && s.mode == EngineMode.AUTO
+                        ) {
+                            // Response received — start the post-response delay countdown.
+                            // The ticker will advance when the countdown reaches zero.
+                            _state.value = s.copy(
+                                waitingForActionId = null,
+                                postResponseWaitRemainingSec = event.duration
+                            )
+                        } else {
+                            advance("action:$waitingFor")
+                        }
+                    }
                 }
             }
         }
@@ -146,6 +163,7 @@ class ExperimentEngine(
             waitingForActionId = null,
             waitingForTriggerId = null,
             randomWaitRemainingSec = null,
+            postResponseWaitRemainingSec = null,
             runId = null
         )
         SessionLogStore.currentRunId = null
@@ -207,10 +225,12 @@ class ExperimentEngine(
             elapsedSecInEvent = 0f,
             waitingForActionId = waitAction,
             waitingForTriggerId = waitTrigger,
-            randomWaitRemainingSec = randomRemaining
+            randomWaitRemainingSec = randomRemaining,
+            postResponseWaitRemainingSec = null
         )
         emitEnvelope(WsEnvelope.TYPE_EVENT_ADVANCE, "{\"index\":$index,\"id\":\"${event.id}\"}")
-        if (event.intervention != null && (event.kind is EventKind.WaitForAction || event.kind == EventKind.Timed)) {
+        if (event.intervention != null &&
+            (event.kind is EventKind.WaitForAction || event.kind == EventKind.Timed || event.kind == EventKind.WaitForPrevious)) {
             scope.launch {
                 runCatching {
                     WearMessageSender(context).sendIntervention(Json.encodeToString(event.intervention!!))
@@ -247,11 +267,22 @@ class ExperimentEngine(
                         } else _state.value = s.copy(randomWaitRemainingSec = remaining, elapsedSecInEvent = newElapsed)
                     }
                     is EventKind.WaitForAction,
-                    is EventKind.WaitForTrigger,
-                    EventKind.WaitForPrevious -> {
+                    is EventKind.WaitForTrigger -> {
                         _state.value = s.copy(elapsedSecInEvent = newElapsed)
                         val timeout = if (event.duration > 0f) event.duration else 60f
                         if (newElapsed >= timeout && s.mode == EngineMode.AUTO) advance("timeout")
+                    }
+                    EventKind.WaitForPrevious -> {
+                        val postWait = s.postResponseWaitRemainingSec
+                        if (postWait != null) {
+                            // Response received — counting down post-response delay.
+                            val remaining = postWait - intervalMs / 1000f
+                            if (remaining <= 0f) advance("post-response-wait-elapsed")
+                            else _state.value = s.copy(postResponseWaitRemainingSec = remaining, elapsedSecInEvent = newElapsed)
+                        } else {
+                            // Still waiting for previous response — no timeout.
+                            _state.value = s.copy(elapsedSecInEvent = newElapsed)
+                        }
                     }
                 }
                 if (s.elapsedSecInEvent.toInt() != _state.value.elapsedSecInEvent.toInt()) emitState()

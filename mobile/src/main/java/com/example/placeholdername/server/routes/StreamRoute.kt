@@ -4,14 +4,13 @@ import com.BWPStudio.JITAIWizard.datalayer.WatchDataRelay
 import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
 import io.ktor.websocket.*
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 fun Route.streamRoute() {
     webSocket("/stream") {
         try {
-            WatchDataRelay.flow.collectLatest { batch ->
+            WatchDataRelay.flow.collect { batch ->
                 val json = Json.encodeToString(batch)
                 outgoing.send(Frame.Text(json))
             }
