@@ -43,6 +43,7 @@ import com.example.jitaicompanion.presentation.theme.JitaiCompanionTheme
 import com.example.jitaicompanion.service.WatchDataService
 import com.example.jitaicompanion.ui.odi.OdiAnimationState
 import com.example.jitaicompanion.ui.odi.OdiCharacter
+import kotlin.system.exitProcess
 
 class MainActivity : ComponentActivity() {
     companion object {
@@ -72,8 +73,23 @@ class MainActivity : ComponentActivity() {
         ensureWatchPermissions()
         startWatchDataServiceIfAllowed()
         setContent {
-            WearApp(onOdiClick = { ensureWatchPermissions() })
+            WearApp(
+                onOdiClick = { ensureWatchPermissions() },
+                onForceEnd = { forceEnd() }
+            )
         }
+    }
+
+    /**
+     * Fully shuts the watch app down with no lingering background work: stops the
+     * sensor foreground service, finishes any tracked interaction screens, removes the
+     * task and terminates the process.
+     */
+    private fun forceEnd() {
+        Log.i("MainActivity", "Force End requested — shutting down watch app")
+        runCatching { stopService(Intent(this, WatchDataService::class.java)) }
+        finishAndRemoveTask()
+        exitProcess(0)
     }
 
     override fun onRequestPermissionsResult(
@@ -157,7 +173,7 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun WearApp(onOdiClick: () -> Unit) {
+fun WearApp(onOdiClick: () -> Unit, onForceEnd: () -> Unit = {}) {
     val heartRate by WatchDataService.heartRateState.collectAsState()
     val isRunning by WatchDataService.isRunning.collectAsState()
 
@@ -227,6 +243,21 @@ fun WearApp(onOdiClick: () -> Unit) {
                             text = if (heartRate > 0) "Stay active!" else if (!isRunning) "Tap to Grant Permissions" else "Waiting for sensors...",
                             style = MaterialTheme.typography.bodySmall,
                             textAlign = TextAlign.Center
+                        )
+                    }
+
+                    // Force End — fully closes the watch app and stops the background service.
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.BottomCenter
+                    ) {
+                        Text(
+                            text = "⏻ Force End",
+                            color = Color(0xFFEF5350),
+                            fontSize = 11.sp,
+                            modifier = Modifier
+                                .padding(bottom = 2.dp)
+                                .clickable { onForceEnd() }
                         )
                     }
                 }

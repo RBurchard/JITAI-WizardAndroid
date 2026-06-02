@@ -49,7 +49,11 @@ class InterventionActivity : ComponentActivity() {
     override fun onDestroy() {
         super.onDestroy()
         if (currentInstance === this) currentInstance = null
-        vibrator.cancel()
+        // `vibrator` is only initialized past the early-return guards in onCreate.
+        // Guard against UninitializedPropertyAccessException when the activity is
+        // finished early (e.g. a Stop/Cancel intervention) — this previously crashed
+        // the whole watch app whenever an interaction was force-stopped.
+        if (::vibrator.isInitialized) vibrator.cancel()
         ringtone?.stop()
         ringtone = null
     }
@@ -71,6 +75,12 @@ class InterventionActivity : ComponentActivity() {
 
         if (intervention.type == "Stop" || intervention.durationSeconds == 0) { finish(); return }
 
+        // If the researcher sent an intervention without any message text, fall back to a
+        // sensible default so a first-time user still sees a meaningful prompt.
+        if (intervention.message.isBlank()) {
+            intervention.message = defaultMessageFor(intervention.type)
+        }
+
         vibrator = getSystemService(Vibrator::class.java)
         applyVibration(intervention.notification)
 
@@ -89,6 +99,13 @@ class InterventionActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    /** Fallback prompt shown when an intervention arrives with no message text. */
+    private fun defaultMessageFor(type: String): String = when (type) {
+        "Yes/No" -> "Are you doing okay right now?"
+        "Timer" -> "Take a short, calm break."
+        else -> "Take a mindful moment — notice how you feel."
     }
 
     private fun applyVibration(type: NotificationType) {

@@ -39,12 +39,16 @@ import com.example.jitaicompanion.convention.models.Experiment
 import com.example.jitaicompanion.convention.models.GameType
 import com.example.jitaicompanion.convention.models.Intervention
 import com.example.jitaicompanion.convention.models.NotificationType
+import com.example.jitaicompanion.convention.models.ParticipantInfo
 import com.example.jitaicompanion.convention.models.PhoneTaskType
 import com.example.jitaicompanion.convention.models.TriggerKind
+import com.BWPStudio.JITAIWizard.settings.SettingsKeys
+import com.BWPStudio.JITAIWizard.settings.SettingsRepository
 import com.BWPStudio.JITAIWizard.JITAIWizardApp
 import com.BWPStudio.JITAIWizard.server.ServerState
 import com.BWPStudio.JITAIWizard.experiment.EngineMode
 import com.BWPStudio.JITAIWizard.experiment.Event
+import com.BWPStudio.JITAIWizard.experiment.ExperimentStore
 import com.BWPStudio.JITAIWizard.experiment.LogEvent
 import com.BWPStudio.JITAIWizard.ui.components.StringOptionDropdown
 import kotlinx.coroutines.delay
@@ -93,15 +97,17 @@ fun ExperimentScreen(onWearError: (String) -> Unit = {}) {
         }
     }
 
-    val createFileLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
-        uri?.let { context.contentResolver.openOutputStream(it)?.use { s -> s.write(Json.encodeToString(list).toByteArray()) } }
-    }
-    val loadLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        uri?.let {
-            context.contentResolver.openInputStream(uri)?.bufferedReader()?.use { r ->
-                list = Json.decodeFromString<List<Event>>(r.readText())
-            }
-        }
+    var saveDialogOpen by remember { mutableStateOf(false) }
+    var loadDialogOpen by remember { mutableStateOf(false) }
+
+    // Builds an Experiment snapshot from the current editor state (events + name + triggers).
+    fun buildCurrentExperiment(): Experiment {
+        val current = app.experimentStore.active.value
+        return current.copy(
+            name = experiment,
+            events = list.map { it.toShared() },
+            triggers = current.triggers
+        )
     }
 
     LaunchedEffect(running) {
@@ -129,8 +135,8 @@ fun ExperimentScreen(onWearError: (String) -> Unit = {}) {
                             Text(if (saveLogsBool) "Saving Logs" else "No logs", fontSize = 10.sp, lineHeight = 10.sp)
                         }
                     }
-                    Button(onClick = { loadLauncher.launch(arrayOf("application/json")) }, enabled = !running) { Text("Load") }
-                    Button(onClick = { createFileLauncher.launch("events.json") }, enabled = !running) { Text("Save") }
+                    Button(onClick = { loadDialogOpen = true }, enabled = !running) { Text("Load") }
+                    Button(onClick = { saveDialogOpen = true }, enabled = !running) { Text("Save") }
                     Button(onClick = {
                         running = !running
                         if (running) {
@@ -237,9 +243,63 @@ fun ExperimentScreen(onWearError: (String) -> Unit = {}) {
 
             // Settings dialog
             if (settingsOpen) {
-                EditSettingsDialog(onDismiss = { settingsOpen = false }) { expName, part, saveLogs ->
+                EditSettingsDialog(
+                    initialExperiment = experiment,
+                    // Prefer the latest synced participant (e.g. just pushed by the ControlStation).
+                    initialParticipant = ServerState.participantInfo?.label?.takeIf { it.isNotBlank() } ?: participantId,
+                    initialSaveLogs = saveLogsBool,
+                    onDismiss = { settingsOpen = false }
+                ) { expName, part, saveLogs ->
                     experiment = expName; participantId = part; saveLogsBool = saveLogs
+                    // Sync the participant to ServerState + persist it, so the ControlStation
+                    // can read it back via GET /participant (bidirectional participant sync).
+                    setPhoneParticipant(part)
+                    scope.launch { SettingsRepository(context).setSetting(SettingsKeys.PARTICIPANT, part) }
                 }
+            }
+
+            // Save schedule dialog
+            if (saveDialogOpen) {
+                SaveScheduleDialog(
+                    initialName = experiment.ifBlank { ExperimentStore.DEFAULT_SCHEDULE },
+                    existing = app.experimentStore.listSchedules(),
+                    onDismiss = { saveDialogOpen = false },
+                    onSave = { slot ->
+                        if (list.isEmpty()) {
+                            Toast.makeText(context, "No events to save!", Toast.LENGTH_SHORT).show()
+                        } else {
+                            val built = buildCurrentExperiment()
+                            app.experimentStore.saveSchedule(slot, built)
+                            // Also make it the active schedule so it persists + syncs to the ControlStation.
+                            app.experimentStore.replace(built)
+                            com.BWPStudio.JITAIWizard.triggers.TriggerEngine.setTriggers(built.triggers)
+                            Toast.makeText(context, "Saved schedule \"$slot\"", Toast.LENGTH_SHORT).show()
+                        }
+                        saveDialogOpen = false
+                    }
+                )
+            }
+
+            // Load schedule dialog
+            if (loadDialogOpen) {
+                LoadScheduleDialog(
+                    schedules = app.experimentStore.listSchedules(),
+                    onDismiss = { loadDialogOpen = false },
+                    onDelete = { slot -> app.experimentStore.deleteSchedule(slot) },
+                    onLoad = { slot ->
+                        val loaded = app.experimentStore.loadSchedule(slot)
+                        if (loaded == null) {
+                            Toast.makeText(context, "Could not load \"$slot\"", Toast.LENGTH_SHORT).show()
+                        } else {
+                            list = loaded.events.map { Event.fromShared(it) }
+                            experiment = loaded.name
+                            app.experimentStore.replace(loaded)
+                            com.BWPStudio.JITAIWizard.triggers.TriggerEngine.setTriggers(loaded.triggers)
+                            Toast.makeText(context, "Loaded schedule \"$slot\"", Toast.LENGTH_SHORT).show()
+                        }
+                        loadDialogOpen = false
+                    }
+                )
             }
 
             // Edit/Add FABs
@@ -332,11 +392,28 @@ private fun sendIntervention(context: android.content.Context, intervention: Int
     com.BWPStudio.JITAIWizard.datalayer.WearMessageSender(context).sendIntervention(json, onError = onWearError)
 }
 
+/** Sets the phone-side participant into ServerState so GET /participant exposes it to the ControlStation. */
+private fun setPhoneParticipant(label: String) {
+    val existing = ServerState.participantInfo
+    ServerState.participantInfo = ParticipantInfo(
+        id = existing?.id?.takeIf { it.isNotBlank() } ?: UUID.randomUUID().toString(),
+        sessionId = existing?.sessionId ?: ServerState.sessionId,
+        label = label,
+        deviceIp = existing?.deviceIp ?: ""
+    )
+}
+
 @Composable
-private fun EditSettingsDialog(onDismiss: () -> Unit, onSettingsChanged: (String, String, Boolean) -> Unit) {
-    var experimentName by remember { mutableStateOf("") }
-    var participant by remember { mutableStateOf("") }
-    var saveLogs by remember { mutableStateOf(true) }
+private fun EditSettingsDialog(
+    initialExperiment: String,
+    initialParticipant: String,
+    initialSaveLogs: Boolean,
+    onDismiss: () -> Unit,
+    onSettingsChanged: (String, String, Boolean) -> Unit
+) {
+    var experimentName by remember { mutableStateOf(initialExperiment) }
+    var participant by remember { mutableStateOf(initialParticipant) }
+    var saveLogs by remember { mutableStateOf(initialSaveLogs) }
 
     Dialog(onDismissRequest = onDismiss) {
         Surface(shape = MaterialTheme.shapes.medium, tonalElevation = 8.dp, modifier = Modifier.padding(16.dp)) {
@@ -525,4 +602,90 @@ private fun eventIsValid(event: Event): Boolean {
     if (event.type.isEmpty() || event.duration < 0) return false
     event.intervention?.let { if (it.type.isEmpty()) return false }
     return true
+}
+
+@Composable
+private fun SaveScheduleDialog(
+    initialName: String,
+    existing: List<String>,
+    onDismiss: () -> Unit,
+    onSave: (String) -> Unit
+) {
+    var slotName by remember { mutableStateOf(initialName) }
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(shape = MaterialTheme.shapes.medium, tonalElevation = 8.dp, modifier = Modifier.padding(16.dp)) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text("Save Schedule", style = MaterialTheme.typography.titleMedium)
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = slotName,
+                    onValueChange = { slotName = it },
+                    label = { Text("Schedule name") },
+                    singleLine = true
+                )
+                if (existing.isNotEmpty()) {
+                    Spacer(Modifier.height(8.dp))
+                    Text("Overwrite existing:", style = MaterialTheme.typography.labelMedium)
+                    LazyColumn(modifier = Modifier.heightIn(max = 140.dp)) {
+                        items(existing) { name ->
+                            Text(
+                                name,
+                                modifier = Modifier.fillMaxWidth().clickable { slotName = name }.padding(vertical = 8.dp)
+                            )
+                        }
+                    }
+                }
+                Spacer(Modifier.height(12.dp))
+                Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
+                    TextButton(onClick = onDismiss) { Text("Cancel") }
+                    Spacer(Modifier.width(8.dp))
+                    Button(onClick = { onSave(slotName.trim().ifBlank { ExperimentStore.DEFAULT_SCHEDULE }) }) { Text("Save") }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun LoadScheduleDialog(
+    schedules: List<String>,
+    onDismiss: () -> Unit,
+    onDelete: (String) -> Unit,
+    onLoad: (String) -> Unit
+) {
+    var slots by remember { mutableStateOf(schedules) }
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(shape = MaterialTheme.shapes.medium, tonalElevation = 8.dp, modifier = Modifier.padding(16.dp)) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text("Load Schedule", style = MaterialTheme.typography.titleMedium)
+                Spacer(Modifier.height(8.dp))
+                if (slots.isEmpty()) {
+                    Text("No saved schedules yet.", style = MaterialTheme.typography.bodyMedium)
+                } else {
+                    LazyColumn(modifier = Modifier.heightIn(max = 260.dp)) {
+                        items(slots, key = { it }) { name ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    name,
+                                    modifier = Modifier.weight(1f).clickable { onLoad(name) }.padding(vertical = 10.dp)
+                                )
+                                if (name != ExperimentStore.DEFAULT_SCHEDULE) {
+                                    IconButton(onClick = { onDelete(name); slots = slots.filter { it != name } }) {
+                                        Icon(Icons.Rounded.Delete, contentDescription = "Delete")
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                Spacer(Modifier.height(12.dp))
+                Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
+                    TextButton(onClick = onDismiss) { Text("Close") }
+                }
+            }
+        }
+    }
 }

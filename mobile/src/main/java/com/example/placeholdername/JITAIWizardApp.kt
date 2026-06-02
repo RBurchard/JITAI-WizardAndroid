@@ -6,8 +6,15 @@ import com.BWPStudio.JITAIWizard.experiment.ExperimentEngine
 import com.BWPStudio.JITAIWizard.experiment.ExperimentLogger
 import com.BWPStudio.JITAIWizard.experiment.ExperimentStore
 import com.BWPStudio.JITAIWizard.server.KtorServer
+import com.BWPStudio.JITAIWizard.server.ServerState
 import com.BWPStudio.JITAIWizard.server.UdpBeacon
+import com.BWPStudio.JITAIWizard.settings.SettingsKeys
+import com.BWPStudio.JITAIWizard.settings.SettingsRepository
 import com.BWPStudio.JITAIWizard.triggers.TriggerEngine
+import com.example.jitaicompanion.convention.models.ParticipantInfo
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
+import java.util.UUID
 
 class JITAIWizardApp : Application() {
 
@@ -25,6 +32,21 @@ class JITAIWizardApp : Application() {
         experimentStore = ExperimentStore(this)
         experimentEngine = ExperimentEngine(this, experimentStore)
         TriggerEngine.setTriggers(experimentStore.active.value.triggers)
+
+        // Restore the last-known participant so GET /participant exposes it to the
+        // ControlStation immediately, even before a session has been started.
+        val savedParticipant = runCatching {
+            runBlocking { SettingsRepository(this@JITAIWizardApp).getSetting(SettingsKeys.PARTICIPANT, "").first() }
+        }.getOrDefault("")
+        if (savedParticipant.isNotBlank()) {
+            ServerState.participantInfo = ParticipantInfo(
+                id = UUID.randomUUID().toString(),
+                sessionId = "",
+                label = savedParticipant,
+                deviceIp = ""
+            )
+        }
+
         server = KtorServer(this)
         server.start()
         beacon.start()
@@ -34,5 +56,11 @@ class JITAIWizardApp : Application() {
         super.onTerminate()
         beacon.stop()
         server.stop()
+    }
+
+    /** Stops all background services (HTTP server + UDP beacon) so the app can fully close. */
+    fun shutdown() {
+        runCatching { beacon.stop() }
+        runCatching { server.stop() }
     }
 }

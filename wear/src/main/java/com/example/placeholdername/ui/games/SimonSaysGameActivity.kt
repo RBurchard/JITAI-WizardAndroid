@@ -18,6 +18,10 @@ import androidx.compose.runtime.key
 class SimonSaysGameActivity : MicrogameActivity() {
 
     override val timeoutSeconds = 60
+    override val tutorialTitle = "Simon Says"
+    override val tutorialText =
+        "Watch which colored squares light up, then tap them back in the same order. " +
+        "The sequence gets one step longer each round — clear 4 rounds to win!"
 
     private val quadrantColors = listOf(Color.Red, Color.Blue, Color.Green, Color.Yellow)
     private val colorNames = listOf("Red", "Blue", "Green", "Yellow")

@@ -1,5 +1,7 @@
 package com.BWPStudio.JITAIWizard.ui.debugview
 
+import android.app.Activity
+import android.content.Context
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -20,6 +22,17 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
+import kotlin.system.exitProcess
+
+/**
+ * Fully closes the phone app with no lingering background processes: stops the HTTP
+ * server and UDP beacon, finishes the activity stack and terminates the process.
+ */
+private fun forceEndApp(context: Context) {
+    runCatching { (context.applicationContext as? JITAIWizardApp)?.shutdown() }
+    (context as? Activity)?.finishAffinity()
+    exitProcess(0)
+}
 
 @Composable
 fun DebugViewScreen(onBack: () -> Unit) {
@@ -38,16 +51,24 @@ fun DebugViewScreen(onBack: () -> Unit) {
         )
     }
 
+    val context = LocalContext.current
+
     Column(modifier = Modifier.fillMaxSize()) {
         Surface(color = MaterialTheme.colorScheme.errorContainer, tonalElevation = 4.dp) {
             Row(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Text("DEBUG MODE", color = MaterialTheme.colorScheme.onErrorContainer,
                     style = MaterialTheme.typography.labelLarge)
-                TextButton(onClick = onBack) {
-                    Text("Back", color = MaterialTheme.colorScheme.onErrorContainer)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    TextButton(onClick = { forceEndApp(context) }) {
+                        Text("⏻ Force End", color = MaterialTheme.colorScheme.error)
+                    }
+                    TextButton(onClick = onBack) {
+                        Text("Back", color = MaterialTheme.colorScheme.onErrorContainer)
+                    }
                 }
             }
         }

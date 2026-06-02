@@ -22,6 +22,9 @@ import kotlinx.serialization.json.Json
 class TriviaGameActivity : MicrogameActivity() {
 
     override val timeoutSeconds = 30
+    override val tutorialTitle = "Trivia"
+    override val tutorialText =
+        "Read the question, then tap the answer (A, B, C or D) you think is correct."
 
     private var question: TriviaQuestion? = null
 

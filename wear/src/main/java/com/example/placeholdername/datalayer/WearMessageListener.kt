@@ -10,6 +10,7 @@ import androidx.core.content.ContextCompat
 import com.example.jitaicompanion.convention.Protocol
 import com.example.jitaicompanion.convention.models.GameType
 import com.example.jitaicompanion.convention.models.Intervention
+import com.example.jitaicompanion.convention.models.NotificationType
 import com.example.jitaicompanion.service.WatchDataService
 import com.example.jitaicompanion.ui.InterventionActivity
 import com.example.jitaicompanion.ui.games.LockPickingGameActivity
@@ -62,6 +63,20 @@ class WearMessageListener : WearableListenerService() {
         }
 
         Log.d("WearMessageListener", "Intervention received: ${intervention.type}")
+
+        // A Stop / Cancel intervention should cleanly close any running interaction and
+        // return to the Odi screen — never launch a (blank) intervention screen for it.
+        val isStop = intervention.type.equals("Stop", ignoreCase = true) ||
+            intervention.notification == NotificationType.CANCEL ||
+            intervention.durationSeconds <= 0
+        if (isStop) {
+            Log.d("WearMessageListener", "Stop/Cancel intervention — finishing interactions")
+            mainHandler.post {
+                MicrogameActivity.finishCurrent()
+                InterventionActivity.finishCurrent()
+            }
+            return
+        }
 
         mainHandler.post {
             InterventionActivity.finishCurrent()

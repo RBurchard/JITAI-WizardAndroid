@@ -43,6 +43,8 @@
         <activity
             android:name="com.example.jitaicompanion.ui.InterventionActivity"
             android:exported="false"
+            android:noHistory="true"
+            android:excludeFromRecents="true"
             android:showWhenLocked="true"
             android:turnScreenOn="true" />
 
@@ -50,6 +52,8 @@
         <activity
             android:name="com.example.jitaicompanion.ui.PositiveFeedbackActivity"
             android:exported="false"
+            android:noHistory="true"
+            android:excludeFromRecents="true"
             android:showWhenLocked="true"
             android:turnScreenOn="true" />
 
@@ -57,21 +61,29 @@
         <activity
             android:name="com.example.jitaicompanion.ui.games.StandStillGameActivity"
             android:exported="false"
+            android:noHistory="true"
+            android:excludeFromRecents="true"
             android:showWhenLocked="true"
             android:turnScreenOn="true" />
         <activity
             android:name="com.example.jitaicompanion.ui.games.TriviaGameActivity"
             android:exported="false"
+            android:noHistory="true"
+            android:excludeFromRecents="true"
             android:showWhenLocked="true"
             android:turnScreenOn="true" />
         <activity
             android:name="com.example.jitaicompanion.ui.games.SimonSaysGameActivity"
             android:exported="false"
+            android:noHistory="true"
+            android:excludeFromRecents="true"
             android:showWhenLocked="true"
             android:turnScreenOn="true" />
         <activity
             android:name="com.example.jitaicompanion.ui.games.LockPickingGameActivity"
             android:exported="false"
+            android:noHistory="true"
+            android:excludeFromRecents="true"
             android:showWhenLocked="true"
             android:turnScreenOn="true" />
 

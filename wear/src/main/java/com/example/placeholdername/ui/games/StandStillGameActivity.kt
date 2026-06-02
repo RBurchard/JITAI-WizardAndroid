@@ -23,6 +23,9 @@ import kotlin.math.sqrt
 class StandStillGameActivity : MicrogameActivity(), SensorEventListener {
 
     override val timeoutSeconds = 30
+    override val tutorialTitle = "Stand Still"
+    override val tutorialText =
+        "Hold your arm completely still until the ring fills up. If you move, the timer resets and you start over!"
 
     private lateinit var sensorManager: SensorManager
     private var currentMagnitude = 0f

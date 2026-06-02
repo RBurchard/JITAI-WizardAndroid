@@ -33,6 +33,10 @@ import kotlin.math.sqrt
 class LockPickingGameActivity : MicrogameActivity(), SensorEventListener {
 
     override val timeoutSeconds = 60
+    override val tutorialTitle = "Lock Picking"
+    override val tutorialText =
+        "Crack the lock in 3 stages: 1) hold your wrist still, 2) swipe in a circle to turn the dial, " +
+        "3) tap the button when the moving dot is inside the green zone."
 
     private lateinit var sensorManager: SensorManager
     private var currentMagnitude = 0f

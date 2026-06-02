@@ -47,7 +47,7 @@ class KtorServer(private val context: Context) {
                     triggerRoute(context)
                     statusRoute()
                     dataRoute()
-                    participantRoute()
+                    participantRoute(context)
                     triviaRoute()
                     streamRoute()
                     experimentRoute(app)

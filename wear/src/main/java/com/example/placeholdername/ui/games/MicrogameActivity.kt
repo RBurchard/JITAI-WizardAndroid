@@ -7,20 +7,20 @@ import android.os.Vibrator
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
 import androidx.wear.compose.material3.Button
 import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.Text
@@ -28,7 +28,6 @@ import com.example.jitaicompanion.datalayer.WearMessageSender
 import com.example.jitaicompanion.ui.odi.OdiAnimationState
 import com.example.jitaicompanion.ui.odi.OdiCharacter
 import com.example.jitaicompanion.ui.PositiveFeedbackActivity
-import kotlinx.coroutines.delay
 
 abstract class MicrogameActivity : ComponentActivity() {
 
@@ -42,7 +41,12 @@ abstract class MicrogameActivity : ComponentActivity() {
     private var isCompleted = false
 
     abstract val timeoutSeconds: Int
-    open val tutorialText: String = "Quick tip: follow the instructions."
+
+    /** Short title shown above the how-to-play text on the tutorial screen. */
+    open val tutorialTitle: String = "Mini-game"
+
+    /** Game-specific explanation so a first-time user knows exactly what to do. */
+    open val tutorialText: String = "Follow the on-screen instructions."
 
     @Composable
     abstract fun GameContent()
@@ -62,33 +66,45 @@ abstract class MicrogameActivity : ComponentActivity() {
 
     @Composable
     private fun GameWithTutorial() {
+        // The tutorial stays up until the user taps "Start" so a first-time player has
+        // time to actually read how the game works (the old 2s auto-dismiss was far too
+        // short to read the explanation).
         var showTutorial by remember { mutableStateOf(true) }
 
-        LaunchedEffect(Unit) {
-            delay(2000L)
-            showTutorial = false
-        }
-
         if (showTutorial) {
-            OdiTutorialScreen(message = tutorialText) { showTutorial = false }
+            OdiTutorialScreen(title = tutorialTitle, message = tutorialText) { showTutorial = false }
         } else {
             GameContent()
         }
     }
 
     @Composable
-    private fun OdiTutorialScreen(message: String, onStart: () -> Unit) {
+    private fun OdiTutorialScreen(title: String, message: String, onStart: () -> Unit) {
         MaterialTheme {
-            Column(
+            ScalingLazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 20.dp)
             ) {
-                OdiCharacter(state = OdiAnimationState.TALKING)
-                Spacer(Modifier.height(6.dp))
-                Text(text = message, style = MaterialTheme.typography.bodyMedium)
-                Spacer(Modifier.height(8.dp))
-                Button(onClick = onStart) { Text("Start") }
+                item { OdiCharacter(state = OdiAnimationState.TALKING) }
+                item { Spacer(Modifier.height(4.dp)) }
+                item {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.titleMedium,
+                        textAlign = TextAlign.Center
+                    )
+                }
+                item { Spacer(Modifier.height(4.dp)) }
+                item {
+                    Text(
+                        text = message,
+                        style = MaterialTheme.typography.bodyMedium,
+                        textAlign = TextAlign.Center
+                    )
+                }
+                item { Spacer(Modifier.height(10.dp)) }
+                item { Button(onClick = onStart) { Text("Start") } }
             }
         }
     }
