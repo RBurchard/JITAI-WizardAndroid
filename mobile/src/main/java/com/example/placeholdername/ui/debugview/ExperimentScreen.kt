@@ -78,10 +78,12 @@ fun ExperimentScreen(onWearError: (String) -> Unit = {}) {
     var running by rememberSaveable { mutableStateOf(false) }
     var settingsOpen by remember { mutableStateOf(false) }
     var experiment by remember { mutableStateOf(app.experimentStore.active.value.name) }
+    var notes by remember { mutableStateOf(app.experimentStore.active.value.notes) }
     var participantId by remember {
         mutableStateOf(ServerState.participantInfo?.label?.takeIf { it.isNotBlank() } ?: "defaultParticipant")
     }
     var saveLogsBool by remember { mutableStateOf(true) }
+    var noteDialogOpen by remember { mutableStateOf(false) }
     var eventToEdit by remember { mutableStateOf<Event?>(null) }
     var eventToHighlight by remember { mutableStateOf<Event?>(null) }
     var elapsedSeconds by rememberSaveable { mutableStateOf(0) }
@@ -93,6 +95,7 @@ fun ExperimentScreen(onWearError: (String) -> Unit = {}) {
             if (!running) {
                 list = exp.events.map { Event.fromShared(it) }
                 experiment = exp.name
+                notes = exp.notes
             }
         }
     }
@@ -105,6 +108,7 @@ fun ExperimentScreen(onWearError: (String) -> Unit = {}) {
         val current = app.experimentStore.active.value
         return current.copy(
             name = experiment,
+            notes = notes,
             events = list.map { it.toShared() },
             triggers = current.triggers
         )
@@ -155,6 +159,7 @@ fun ExperimentScreen(onWearError: (String) -> Unit = {}) {
                         val current = app.experimentStore.active.value
                         val updated = current.copy(
                             name = experiment,
+                            notes = notes,
                             events = list.map { it.toShared() },
                             triggers = current.triggers
                         )
@@ -164,6 +169,10 @@ fun ExperimentScreen(onWearError: (String) -> Unit = {}) {
                         app.experimentEngine.start(EngineMode.AUTO)
                         Toast.makeText(context, "Auto run started", Toast.LENGTH_SHORT).show()
                     }, enabled = !editMode && !running) { Text("Auto") }
+
+                    // Jot a session note ("Person felt uncomfortable" etc.). Recorded as a log
+                    // event that syncs into the Control Station DB / CSV via the /logs pipeline.
+                    Button(onClick = { noteDialogOpen = true }) { Text("📝") }
                 }
 
                 // Event list
@@ -248,13 +257,24 @@ fun ExperimentScreen(onWearError: (String) -> Unit = {}) {
                     // Prefer the latest synced participant (e.g. just pushed by the ControlStation).
                     initialParticipant = ServerState.participantInfo?.label?.takeIf { it.isNotBlank() } ?: participantId,
                     initialSaveLogs = saveLogsBool,
+                    initialNotes = notes,
                     onDismiss = { settingsOpen = false }
-                ) { expName, part, saveLogs ->
-                    experiment = expName; participantId = part; saveLogsBool = saveLogs
+                ) { expName, part, saveLogs, newNotes ->
+                    experiment = expName; participantId = part; saveLogsBool = saveLogs; notes = newNotes
                     // Sync the participant to ServerState + persist it, so the ControlStation
                     // can read it back via GET /participant (bidirectional participant sync).
                     setPhoneParticipant(part)
                     scope.launch { SettingsRepository(context).setSetting(SettingsKeys.PARTICIPANT, part) }
+                }
+            }
+
+            // Session note dialog
+            if (noteDialogOpen) {
+                SessionNoteDialog(onDismiss = { noteDialogOpen = false }) { text ->
+                    if (text.isNotBlank()) {
+                        logger.log(LogEvent(eventType = "Note", value = text))
+                        Toast.makeText(context, "Note recorded", Toast.LENGTH_SHORT).show()
+                    }
                 }
             }
 
@@ -408,20 +428,23 @@ private fun EditSettingsDialog(
     initialExperiment: String,
     initialParticipant: String,
     initialSaveLogs: Boolean,
+    initialNotes: String,
     onDismiss: () -> Unit,
-    onSettingsChanged: (String, String, Boolean) -> Unit
+    onSettingsChanged: (String, String, Boolean, String) -> Unit
 ) {
     var experimentName by remember { mutableStateOf(initialExperiment) }
     var participant by remember { mutableStateOf(initialParticipant) }
     var saveLogs by remember { mutableStateOf(initialSaveLogs) }
+    var notes by remember { mutableStateOf(initialNotes) }
 
     Dialog(onDismissRequest = onDismiss) {
         Surface(shape = MaterialTheme.shapes.medium, tonalElevation = 8.dp, modifier = Modifier.padding(16.dp)) {
-            Column(modifier = Modifier.padding(16.dp)) {
+            Column(modifier = Modifier.padding(16.dp).verticalScroll(rememberScrollState())) {
                 Text("Settings", style = MaterialTheme.typography.titleMedium)
                 Spacer(Modifier.height(8.dp))
                 OutlinedTextField(value = experimentName, onValueChange = { experimentName = it }, label = { Text("Experiment Name") }, singleLine = true)
                 OutlinedTextField(value = participant, onValueChange = { participant = it }, label = { Text("Participant ID") }, singleLine = true)
+                OutlinedTextField(value = notes, onValueChange = { notes = it }, label = { Text("Experiment Notes / Rundown") }, minLines = 2, maxLines = 5)
                 Spacer(Modifier.height(8.dp))
                 Row(Modifier.fillMaxWidth().clickable { saveLogs = !saveLogs }, verticalAlignment = Alignment.CenterVertically) {
                     Checkbox(checked = saveLogs, onCheckedChange = { saveLogs = it })
@@ -429,7 +452,32 @@ private fun EditSettingsDialog(
                 }
                 Spacer(Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
-                    Button(onClick = { onDismiss(); onSettingsChanged(experimentName, participant, saveLogs) }) { Text("OK") }
+                    Button(onClick = { onDismiss(); onSettingsChanged(experimentName, participant, saveLogs, notes) }) { Text("OK") }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SessionNoteDialog(onDismiss: () -> Unit, onSave: (String) -> Unit) {
+    var text by remember { mutableStateOf("") }
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(shape = MaterialTheme.shapes.medium, tonalElevation = 8.dp, modifier = Modifier.padding(16.dp)) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text("Session note", style = MaterialTheme.typography.titleMedium)
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = text, onValueChange = { text = it },
+                    label = { Text("What happened?") },
+                    placeholder = { Text("e.g. Participant felt uncomfortable") },
+                    minLines = 2, maxLines = 5
+                )
+                Spacer(Modifier.height(12.dp))
+                Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
+                    TextButton(onClick = onDismiss) { Text("Cancel") }
+                    Spacer(Modifier.width(8.dp))
+                    Button(onClick = { onSave(text); onDismiss() }) { Text("Save") }
                 }
             }
         }

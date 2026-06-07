@@ -12,13 +12,14 @@ import java.security.MessageDigest
 import java.util.UUID
 
 class ExperimentStore(context: Context) {
-    private val file = File(context.filesDir, "active_experiment.json")
+    private val appContext = context.applicationContext
+    private val file = File(appContext.filesDir, "active_experiment.json")
     private val json = Json { ignoreUnknownKeys = true; coerceInputValues = true; prettyPrint = true; encodeDefaults = true }
 
     // Folder holding named, persistent experiment schedules. "DefaultExperiment" is the
     // rolling auto-saved copy of whatever schedule was last active (incl. ControlStation
     // syncs), so the phone always has the last schedule even with no ControlStation around.
-    private val schedulesDir = File(context.filesDir, "experiment_schedules").apply { mkdirs() }
+    private val schedulesDir = File(appContext.filesDir, "experiment_schedules").apply { mkdirs() }
 
     companion object {
         const val DEFAULT_SCHEDULE = "DefaultExperiment"
@@ -40,21 +41,30 @@ class ExperimentStore(context: Context) {
                 // No active file yet — fall back to the persisted default schedule.
                 scheduleFile(DEFAULT_SCHEDULE).exists() ->
                     json.decodeFromString(scheduleFile(DEFAULT_SCHEDULE).readText())
-                else -> freshExperiment()
+                // Fresh install — seed from the bundled default asset.
+                else -> defaultExperiment()
             }
         } catch (e: Exception) {
-            freshExperiment()
+            defaultExperiment()
         }
     }
 
-    private fun freshExperiment() = Experiment(
-        id = UUID.randomUUID().toString(),
-        name = "Untitled",
-        version = 1L,
-        updatedAt = System.currentTimeMillis(),
-        events = emptyList(),
-        triggers = emptyList()
-    )
+    // Fresh installs start from the bundled default (kept identical to the Control Station's
+    // Assets/default_experiment.json). Falls back to an empty experiment if the asset is missing.
+    private fun defaultExperiment(): Experiment = try {
+        appContext.assets.open("default_experiment.json").bufferedReader().use { r ->
+            json.decodeFromString<Experiment>(r.readText())
+        }
+    } catch (e: Exception) {
+        Experiment(
+            id = UUID.randomUUID().toString(),
+            name = "Untitled",
+            version = 1L,
+            updatedAt = System.currentTimeMillis(),
+            events = emptyList(),
+            triggers = emptyList()
+        )
+    }
 
     @Synchronized
     fun replace(experiment: Experiment, fromSync: Boolean = false): String {

@@ -18,6 +18,7 @@ data class Experiment(
     val name: String,
     val version: Long = 1L,
     val updatedAt: Long = System.currentTimeMillis(),
+    val notes: String = "",
     val events: List<ExperimentEvent> = emptyList(),
     val triggers: List<Trigger> = emptyList()
 )
