@@ -16,3 +16,6 @@ local.properties
 /.idea
 /convention/build
 /.claude
+keystore.properties
+*.jks
+*.keystore
