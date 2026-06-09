@@ -1,5 +1,13 @@
 # JITAI Wizard -- Android Companion Suite
 
+<p align="center">
+  <img src="docs/odi.png" alt="Odi -- the JITAI Wizard mascot" width="180" />
+</p>
+
+<p align="center">
+  <b>Latest release:</b> <a href="https://github.com/BloodWolfPlayer/JITAI-WizardAndroid/releases/latest">v1.0.0-beta</a> &middot; signed Phone APK + Wear OS APK
+</p>
+
 _A research-grade intervention delivery system for Wear OS and Android._
 _Project for the Bachelor of Science in the University of Siegen_
 
@@ -14,16 +22,17 @@ _Project for the Bachelor of Science in the University of Siegen_
 ## Table of Contents
 
 1. [Overview](#overview)
-2. [System Architecture](#system-architecture)
-3. [Requirements](#requirements)
-4. [Building the Project](#building-the-project)
-5. [Phone Application](#phone-application)
-6. [Odi -- The Character](#odi----the-character)
-7. [Wear OS Application](#wear-os-application)
-8. [Intervention Types and Notification Options](#intervention-types-and-notification-options)
-9. [Communication Protocol Reference](#communication-protocol-reference)
-10. [Logging and Data Export](#logging-and-data-export)
-11. [Known Limitations and Notes](#known-limitations-and-notes)
+2. [Download & Install (Beta)](#download--install-beta)
+3. [System Architecture](#system-architecture)
+4. [Requirements](#requirements)
+5. [Building the Project](#building-the-project)
+6. [Phone Application](#phone-application)
+7. [Odi -- The Character](#odi----the-character)
+8. [Wear OS Application](#wear-os-application)
+9. [Intervention Types and Notification Options](#intervention-types-and-notification-options)
+10. [Communication Protocol Reference](#communication-protocol-reference)
+11. [Logging and Data Export](#logging-and-data-export)
+12. [Known Limitations and Notes](#known-limitations-and-notes)
 
 ---
 
@@ -38,6 +47,29 @@ The system has three tiers:
 - **Wear OS Watch** -- runs the watch app, which collects biometric sensor data, displays interventions to the participant, and hosts the interactive micro-games.
 
 Both Android modules share the application ID `com.BWPStudio.JITAIWizard`, which is required for the Wearable Data Layer to link the phone and watch apps together.
+
+---
+
+## Download & Install (Beta)
+
+> Just want to run it? Grab the signed APKs from the [**Releases page**](https://github.com/BloodWolfPlayer/JITAI-WizardAndroid/releases/latest) -- no build tools required.
+
+Every release ships both APKs signed with the **same key**, so the Wearable Data Layer handshake works out of the box. Always install the phone and watch builds **from the same release**.
+
+| File | Install on | Minimum OS |
+|------|-----------|------------|
+| `JITAI-Wizard-Phone-v1.0.0-beta.apk` | Android phone | Android 10 (API 29) |
+| `JITAI-Wizard-Watch-v1.0.0-beta.apk` | Wear OS watch | Wear OS 4.0 (API 33) |
+
+1. On both devices, allow installs from your browser/file manager (**Settings → Apps → Install unknown apps**).
+2. Download and install the **Phone** APK on the Android phone.
+3. Download and install the **Watch** APK on the Wear OS watch. (Transfer via the watch's browser, ADB, or a file-push app.)
+4. Confirm the phone and watch are paired and signed in to the **same Google account** with Bluetooth on.
+5. Open the phone app -- the watch pairs automatically over the Wearable Data Layer.
+
+The Windows **Control Station** is released separately: [JITAI-WizardControlStation releases](https://github.com/BloodWolfPlayer/JITAI-WizardControlStation/releases/latest).
+
+Prefer to build from source? See [Building the Project](#building-the-project).
 
 ---
 
@@ -96,7 +128,7 @@ For ControlStation connectivity, the phone must be on the same local Wi-Fi netwo
 1. Clone the repository:
 
 ```
-git clone https://github.com/BWPlayer/JITAI-WizardAndroid.git
+git clone https://github.com/BloodWolfPlayer/JITAI-WizardAndroid.git
 ```
 
 2. Open the project root in Android Studio. Wait for the Gradle sync to complete. All dependencies are downloaded automatically.
