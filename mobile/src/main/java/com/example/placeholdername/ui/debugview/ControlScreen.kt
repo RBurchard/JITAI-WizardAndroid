@@ -3,6 +3,8 @@ package com.BWPStudio.JITAIWizard.ui.debugview
 import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -32,7 +34,10 @@ fun ControlScreen(onWearError: (String) -> Unit = {}) {
     var selectedGame by remember { mutableStateOf("None") }
 
     Column(
-        modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
+        modifier = Modifier.fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+            .verticalScroll(rememberScrollState())
+            .navigationBarsPadding(),
         verticalArrangement = Arrangement.Top,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -79,6 +84,7 @@ fun ControlScreen(onWearError: (String) -> Unit = {}) {
         ConfirmActionButton {
             send(context, "Stop", NotificationType.CANCEL, "", 0, "None", onWearError)
         }
+        Spacer(Modifier.height(16.dp))
     }
 }
 

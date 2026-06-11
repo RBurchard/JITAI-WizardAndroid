@@ -55,8 +55,12 @@ fun DebugViewScreen(onBack: () -> Unit) {
 
     Column(modifier = Modifier.fillMaxSize()) {
         Surface(color = MaterialTheme.colorScheme.errorContainer, tonalElevation = 4.dp) {
+            // statusBars padding keeps the colored bar drawing behind the camera/status bar
+            // while the buttons sit safely below it (edge-to-edge is enabled in MainActivity).
             Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                modifier = Modifier.fillMaxWidth()
+                    .windowInsetsPadding(WindowInsets.statusBars)
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {

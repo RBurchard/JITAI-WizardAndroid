@@ -135,65 +135,84 @@ fun ExperimentScreen(onWearError: (String) -> Unit = {}) {
     val logger = app.logger
     val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH-mm-ss.SSS")
 
+    // Buffer for the Android navigation / home-back bar so bottom controls aren't hidden.
+    val navBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+
     Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         Box(modifier = Modifier.fillMaxSize()) {
             Column(modifier = Modifier.fillMaxSize()) {
-                // Top bar
-                Row(
-                    modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceVariant),
-                    horizontalArrangement = Arrangement.spacedBy(2.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                // Top bar — split into two rows so the controls never squish into vertical
+                // text on narrow devices. Row 1: identity + file ops, Row 2: run controls.
+                Column(
+                    modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceVariant)
                 ) {
-                    if (!running) {
-                        Button(onClick = { settingsOpen = true }, modifier = Modifier.weight(0.25f)) { Text("Settings") }
-                    } else {
-                        Column(modifier = Modifier.weight(0.25f)) {
-                            Text(experiment, maxLines = 1, fontSize = 10.sp, lineHeight = 10.sp)
-                            Text(participantId, maxLines = 1, fontSize = 10.sp, lineHeight = 10.sp)
-                            Text(if (saveLogsBool) "Saving Logs" else "No logs", fontSize = 10.sp, lineHeight = 10.sp)
-                        }
-                    }
-                    Button(onClick = { scheduleSlots = app.experimentStore.listSchedules(); loadDialogOpen = true }, enabled = !running) { Text("Load") }
-                    Button(onClick = { saveDialogOpen = true }, enabled = !running) { Text("Save") }
-                    Button(onClick = {
-                        running = !running
-                        if (running) {
-                            if (list.isEmpty()) { Toast.makeText(context, "No events!", Toast.LENGTH_SHORT).show(); running = false; return@Button }
-                            eventToHighlight = list[0]
-                            logger.createLogFile(experiment, participantId, LocalDateTime.now().format(formatter), saveLogsBool)
-                            logger.log(LogEvent(eventType = "Experiment", value = "start"))
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 2.dp),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        if (!running) {
+                            Button(onClick = { settingsOpen = true }, modifier = Modifier.weight(1f)) { Text("Settings") }
                         } else {
-                            eventToHighlight = null
-                            logger.log(LogEvent(eventType = "Experiment", value = "stop"))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(experiment, maxLines = 1, fontSize = 10.sp, lineHeight = 12.sp)
+                                Text(participantId, maxLines = 1, fontSize = 10.sp, lineHeight = 12.sp)
+                                Text(if (saveLogsBool) "Saving Logs" else "No logs", fontSize = 10.sp, lineHeight = 12.sp)
+                            }
                         }
-                    }, enabled = !editMode) { Text(if (running) "Stop" else "Start") }
+                        Button(onClick = { scheduleSlots = app.experimentStore.listSchedules(); loadDialogOpen = true }, enabled = !running, modifier = Modifier.weight(1f)) { Text("Load") }
+                        Button(onClick = { saveDialogOpen = true }, enabled = !running, modifier = Modifier.weight(1f)) { Text("Save") }
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 2.dp),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Button(onClick = {
+                            running = !running
+                            if (running) {
+                                if (list.isEmpty()) { Toast.makeText(context, "No events!", Toast.LENGTH_SHORT).show(); running = false; return@Button }
+                                eventToHighlight = list[0]
+                                logger.createLogFile(experiment, participantId, LocalDateTime.now().format(formatter), saveLogsBool)
+                                logger.log(LogEvent(eventType = "Experiment", value = "start"))
+                            } else {
+                                eventToHighlight = null
+                                logger.log(LogEvent(eventType = "Experiment", value = "stop"))
+                            }
+                        }, enabled = !editMode, modifier = Modifier.weight(1f)) { Text(if (running) "Stop" else "Start") }
 
-                    Button(onClick = {
-                        if (list.isEmpty()) { Toast.makeText(context, "No events!", Toast.LENGTH_SHORT).show(); return@Button }
-                        val current = app.experimentStore.active.value
-                        val updated = current.copy(
-                            name = experiment,
-                            notes = notes,
-                            events = list.map { it.toShared() },
-                            triggers = current.triggers
-                        )
-                        app.experimentStore.replace(updated)
-                        com.BWPStudio.JITAIWizard.triggers.TriggerEngine.setTriggers(updated.triggers)
-                        logger.createLogFile(experiment, participantId, LocalDateTime.now().format(formatter), saveLogsBool)
-                        app.experimentEngine.start(EngineMode.AUTO)
-                        Toast.makeText(context, "Auto run started", Toast.LENGTH_SHORT).show()
-                    }, enabled = !editMode && !running) { Text("Auto") }
+                        Button(onClick = {
+                            if (list.isEmpty()) { Toast.makeText(context, "No events!", Toast.LENGTH_SHORT).show(); return@Button }
+                            val current = app.experimentStore.active.value
+                            val updated = current.copy(
+                                name = experiment,
+                                notes = notes,
+                                events = list.map { it.toShared() },
+                                triggers = current.triggers
+                            )
+                            app.experimentStore.replace(updated)
+                            com.BWPStudio.JITAIWizard.triggers.TriggerEngine.setTriggers(updated.triggers)
+                            logger.createLogFile(experiment, participantId, LocalDateTime.now().format(formatter), saveLogsBool)
+                            app.experimentEngine.start(EngineMode.AUTO)
+                            Toast.makeText(context, "Auto run started", Toast.LENGTH_SHORT).show()
+                        }, enabled = !editMode && !running, modifier = Modifier.weight(1f)) { Text("Auto") }
 
-                    // Jot a session note ("Person felt uncomfortable" etc.). Recorded as a log
-                    // event that syncs into the Control Station DB / CSV via the /logs pipeline.
-                    Button(onClick = { noteDialogOpen = true }) { Text("📝") }
+                        // Jot a session note ("Person felt uncomfortable" etc.). Recorded as a log
+                        // event that syncs into the Control Station DB / CSV via the /logs pipeline.
+                        Button(onClick = { noteDialogOpen = true }, modifier = Modifier.weight(1f)) { Text("📝 Note") }
+                    }
                 }
 
                 // Event list
                 LazyColumn(
-                    modifier = Modifier.fillMaxSize().padding(bottom = if (running) 72.dp else 0.dp),
+                    modifier = Modifier.fillMaxSize(),
                     state = lazyListState,
-                    contentPadding = PaddingValues(8.dp),
+                    // Reserve room for the nav bar plus the floating run-control bar (when running)
+                    // so the last event never hides behind them.
+                    contentPadding = PaddingValues(
+                        start = 8.dp, end = 8.dp, top = 8.dp,
+                        bottom = 8.dp + navBarBottom + if (running) 72.dp else 0.dp
+                    ),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     item(key = "__triggers__") {
@@ -360,7 +379,7 @@ fun ExperimentScreen(onWearError: (String) -> Unit = {}) {
                     onClick = { editMode = !editMode; if (!editMode) scope.launch { lazyListState.animateScrollToItem(0) } },
                     containerColor = if (editMode) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface,
                     contentColor = if (editMode) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(16.dp).align(Alignment.BottomEnd)
+                    modifier = Modifier.align(Alignment.BottomEnd).navigationBarsPadding().padding(16.dp)
                 ) { Icon(Icons.Default.Edit, null) }
                 if (editMode) {
                     SmallFloatingActionButton(
@@ -368,7 +387,7 @@ fun ExperimentScreen(onWearError: (String) -> Unit = {}) {
                             val newEvent = Event(UUID.randomUUID().toString(), 30f, "", null)
                             list = list + newEvent; eventToEdit = list.last()
                         },
-                        modifier = Modifier.padding(end = 80.dp, bottom = 16.dp).align(Alignment.BottomEnd)
+                        modifier = Modifier.align(Alignment.BottomEnd).navigationBarsPadding().padding(end = 80.dp, bottom = 16.dp)
                     ) { Icon(Icons.Default.Add, null) }
                 }
             }
@@ -377,9 +396,14 @@ fun ExperimentScreen(onWearError: (String) -> Unit = {}) {
             if (running && eventToHighlight != null) {
                 Surface(
                     tonalElevation = 4.dp,
-                    modifier = Modifier.fillMaxWidth().height(72.dp).align(Alignment.BottomCenter)
+                    modifier = Modifier.fillMaxWidth().align(Alignment.BottomCenter)
                 ) {
-                    Box(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
+                    // navigationBars padding lifts the controls above the home/back bar while the
+                    // Surface background still fills the area behind it.
+                    Box(modifier = Modifier.fillMaxWidth()
+                        .windowInsetsPadding(WindowInsets.navigationBars)
+                        .height(72.dp)
+                        .padding(horizontal = 16.dp)) {
                         Row(Modifier.align(Alignment.CenterStart), horizontalArrangement = Arrangement.spacedBy(5.dp), verticalAlignment = Alignment.CenterVertically) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 IconButton(onClick = {
