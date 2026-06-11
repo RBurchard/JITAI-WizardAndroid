@@ -1,6 +1,10 @@
 package com.BWPStudio.JITAIWizard.experiment
 
+import android.content.ContentValues
 import android.content.Context
+import android.os.Build
+import android.os.Environment
+import android.provider.MediaStore
 import com.example.jitaicompanion.convention.models.Experiment
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -9,6 +13,9 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.io.File
 import java.security.MessageDigest
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import java.util.UUID
 
 class ExperimentStore(context: Context) {
@@ -23,6 +30,8 @@ class ExperimentStore(context: Context) {
 
     companion object {
         const val DEFAULT_SCHEDULE = "DefaultExperiment"
+        // Public Downloads sub-folder for exported experiments (mirrors the logs folder style).
+        const val EXPORT_DIR = "JITAI_WIZARD_experiments"
     }
 
     private val _active = MutableStateFlow(loadInitial())
@@ -111,15 +120,98 @@ class ExperimentStore(context: Context) {
     fun loadSchedule(name: String): Experiment? =
         runCatching { json.decodeFromString<Experiment>(scheduleFile(name).readText()) }.getOrNull()
 
+    /**
+     * Parses an experiment from raw JSON (e.g. a file the researcher picked from the phone's
+     * storage) and saves it as a schedule slot under its own name, so it shows up in the Load
+     * list. Returns the slot name used, or null if the text was not a valid Experiment.
+     */
+    fun importSchedule(rawJson: String): String? = runCatching {
+        val exp = json.decodeFromString<Experiment>(rawJson)
+        val slot = sanitize(exp.name)
+        saveSchedule(slot, exp)
+        slot
+    }.getOrNull()
+
+    /**
+     * Exports [experiment] as a pretty-printed .json into the public Downloads folder under
+     * [EXPORT_DIR] (the same place style as the session logs, so it is visible in the Files
+     * app and over USB). Returns a user-facing path to show the researcher, or null on failure.
+     */
+    fun exportToDownloads(experiment: Experiment): String? = runCatching {
+        val safeName = sanitize(experiment.name).ifBlank { "experiment" }
+        val stamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
+        val fileName = "${safeName}_$stamp.json"
+        val bytes = json.encodeToString(experiment).toByteArray()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            val values = ContentValues().apply {
+                put(MediaStore.Downloads.DISPLAY_NAME, fileName)
+                put(MediaStore.Downloads.MIME_TYPE, "application/json")
+                put(MediaStore.Downloads.RELATIVE_PATH, "Download/$EXPORT_DIR")
+            }
+            val resolver = appContext.contentResolver
+            val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
+                ?: error("MediaStore insert returned null")
+            resolver.openOutputStream(uri)?.use { it.write(bytes) } ?: error("Could not open output stream")
+            "Downloads/$EXPORT_DIR/$fileName"
+        } else {
+            val dir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), EXPORT_DIR)
+            if (!dir.exists()) dir.mkdirs()
+            val out = File(dir, fileName)
+            out.writeText(String(bytes))
+            out.absolutePath
+        }
+    }.getOrNull()
+
     /** Deletes a saved schedule slot (the DefaultExperiment slot is protected). */
     fun deleteSchedule(name: String) {
         if (sanitize(name) == DEFAULT_SCHEDULE) return
         runCatching { scheduleFile(name).delete() }
     }
 
+    // ── Bundled experiment templates ────────────────────────────────────────
+    // Extra experiment variants shipped with the APK (kept in sync with the Control
+    // Station's Assets/experiment_*.json). They are seeded into schedule slots so the
+    // phone can pick between them in the Load dialog. Maps asset file -> slot name shown.
+    private val bundledTemplates = linkedMapOf(
+        "experiment_distraction_combo.json" to "Distraction Combo - No Games",
+        "experiment_alt_microgames.json"    to "Alternate Microgame - Lock Picking",
+        "experiment_standstill_only.json"   to "Stand Still Only"
+    )
+
+    // Records which template assets have already been seeded, so a researcher who deletes
+    // a seeded slot does not get it forced back every launch. New templates seed once.
+    private val templateSeedMarker = File(appContext.filesDir, "seeded_templates.txt")
+
+    private fun seedBundledTemplates() {
+        val seeded = runCatching {
+            templateSeedMarker.readLines().filter { it.isNotBlank() }.toMutableSet()
+        }.getOrDefault(mutableSetOf())
+        var changed = false
+        for ((asset, slot) in bundledTemplates) {
+            if (asset in seeded) continue
+            runCatching {
+                appContext.assets.open(asset).bufferedReader().use { r ->
+                    val exp = json.decodeFromString<Experiment>(r.readText())
+                    // Only seed if the researcher hasn't already created a slot of that name.
+                    if (!scheduleFile(slot).exists()) saveSchedule(slot, exp)
+                }
+            }
+            // Mark seeded regardless, so a parse failure or a later deletion never loops.
+            seeded.add(asset)
+            changed = true
+        }
+        if (changed) runCatching { templateSeedMarker.writeText(seeded.joinToString("\n")) }
+    }
+
     private fun computeEtag(payload: String): String {
         val md = MessageDigest.getInstance("SHA-256")
         val digest = md.digest(payload.toByteArray())
         return digest.joinToString("") { "%02x".format(it) }.substring(0, 16)
+    }
+
+    init {
+        // Runs last (declared at class end) so json/schedulesDir/markers are all ready.
+        // Seeds bundled templates without touching the active experiment.
+        runCatching { seedBundledTemplates() }
     }
 }

@@ -205,7 +205,10 @@ As close as possible to Robin Buchards Features, which include:
 - Run mode: steps through events sequentially, shows elapsed time per event, and allows manually jumping to the previous or next event
 - A "Send intervention" button (available once per event during run mode)
 - Participant ID and experiment name fields
-- Save and load experiment sequences as JSON files
+- Save and load named experiment schedules on the phone
+- The Load dialog also has an **Import from phone…** button that opens a file picker; the chosen experiment JSON is saved as a schedule slot and appears in the list immediately
+- The Save dialog has an **Export to file (Downloads)** button that writes the current experiment as a `.json` to `Downloads/JITAI_WIZARD_experiments/` (visible in the Files app / over USB) and shows the saved path in a toast
+- Three extra templates ship bundled and appear ready-to-load in the Load dialog -- **Distraction Combo - No Games**, **Alternate Microgame - Lock Picking**, and **Stand Still Only** -- alongside the seeded default. They mirror the Control Station's `Assets/experiment_*.json`. Each is a single hand-wash cycle (Wizard-of-Oz, no tutorial) with a clearly marked HW-timer start/stop. Deleting a bundled template will not bring it back on the next launch.
 - Optional TSV log output to Downloads/JITAI_WIZARD_logs
 
 ### HTTP Server

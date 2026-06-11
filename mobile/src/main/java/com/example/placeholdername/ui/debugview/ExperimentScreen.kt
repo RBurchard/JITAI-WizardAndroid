@@ -102,6 +102,20 @@ fun ExperimentScreen(onWearError: (String) -> Unit = {}) {
 
     var saveDialogOpen by remember { mutableStateOf(false) }
     var loadDialogOpen by remember { mutableStateOf(false) }
+    var scheduleSlots by remember { mutableStateOf<List<String>>(emptyList()) }
+
+    // Lets the researcher import an experiment JSON from the phone's storage. The imported
+    // schedule is saved as a slot so it shows up in the Load list immediately.
+    val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        val slot = importScheduleFromUri(context, app, uri)
+        if (slot != null) {
+            scheduleSlots = app.experimentStore.listSchedules()
+            Toast.makeText(context, "Imported \"$slot\"", Toast.LENGTH_SHORT).show()
+        } else {
+            Toast.makeText(context, "Import failed: not a valid experiment file", Toast.LENGTH_LONG).show()
+        }
+    }
 
     // Builds an Experiment snapshot from the current editor state (events + name + triggers).
     fun buildCurrentExperiment(): Experiment {
@@ -139,7 +153,7 @@ fun ExperimentScreen(onWearError: (String) -> Unit = {}) {
                             Text(if (saveLogsBool) "Saving Logs" else "No logs", fontSize = 10.sp, lineHeight = 10.sp)
                         }
                     }
-                    Button(onClick = { loadDialogOpen = true }, enabled = !running) { Text("Load") }
+                    Button(onClick = { scheduleSlots = app.experimentStore.listSchedules(); loadDialogOpen = true }, enabled = !running) { Text("Load") }
                     Button(onClick = { saveDialogOpen = true }, enabled = !running) { Text("Save") }
                     Button(onClick = {
                         running = !running
@@ -296,6 +310,20 @@ fun ExperimentScreen(onWearError: (String) -> Unit = {}) {
                             Toast.makeText(context, "Saved schedule \"$slot\"", Toast.LENGTH_SHORT).show()
                         }
                         saveDialogOpen = false
+                    },
+                    onExport = { slot ->
+                        if (list.isEmpty()) {
+                            Toast.makeText(context, "No events to export!", Toast.LENGTH_SHORT).show()
+                        } else {
+                            val exp = buildCurrentExperiment().copy(name = slot)
+                            val path = app.experimentStore.exportToDownloads(exp)
+                            if (path != null) {
+                                Toast.makeText(context, "Exported to $path", Toast.LENGTH_LONG).show()
+                            } else {
+                                Toast.makeText(context, "Export failed - check storage", Toast.LENGTH_LONG).show()
+                            }
+                        }
+                        saveDialogOpen = false
                     }
                 )
             }
@@ -303,9 +331,13 @@ fun ExperimentScreen(onWearError: (String) -> Unit = {}) {
             // Load schedule dialog
             if (loadDialogOpen) {
                 LoadScheduleDialog(
-                    schedules = app.experimentStore.listSchedules(),
+                    schedules = scheduleSlots,
+                    onImport = { importLauncher.launch("*/*") },
                     onDismiss = { loadDialogOpen = false },
-                    onDelete = { slot -> app.experimentStore.deleteSchedule(slot) },
+                    onDelete = { slot ->
+                        app.experimentStore.deleteSchedule(slot)
+                        scheduleSlots = app.experimentStore.listSchedules()
+                    },
                     onLoad = { slot ->
                         val loaded = app.experimentStore.loadSchedule(slot)
                         if (loaded == null) {
@@ -410,6 +442,22 @@ fun ExperimentScreen(onWearError: (String) -> Unit = {}) {
 private fun sendIntervention(context: android.content.Context, intervention: Intervention, onWearError: (String) -> Unit) {
     val json = Json.encodeToString(intervention)
     com.BWPStudio.JITAIWizard.datalayer.WearMessageSender(context).sendIntervention(json, onError = onWearError)
+}
+
+/**
+ * Reads an experiment JSON the researcher picked from phone storage and saves it as a
+ * schedule slot. Returns the slot name shown in the Load list, or null if it could not
+ * be read or parsed.
+ */
+private fun importScheduleFromUri(
+    context: android.content.Context,
+    app: JITAIWizardApp,
+    uri: android.net.Uri
+): String? {
+    val text = runCatching {
+        context.contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() }
+    }.getOrNull() ?: return null
+    return app.experimentStore.importSchedule(text)
 }
 
 /** Sets the phone-side participant into ServerState so GET /participant exposes it to the ControlStation. */
@@ -657,7 +705,8 @@ private fun SaveScheduleDialog(
     initialName: String,
     existing: List<String>,
     onDismiss: () -> Unit,
-    onSave: (String) -> Unit
+    onSave: (String) -> Unit,
+    onExport: (String) -> Unit
 ) {
     var slotName by remember { mutableStateOf(initialName) }
     Dialog(onDismissRequest = onDismiss) {
@@ -683,6 +732,13 @@ private fun SaveScheduleDialog(
                         }
                     }
                 }
+                Spacer(Modifier.height(8.dp))
+                // Writes the current experiment to a shareable .json in Downloads (uses the
+                // name above for the file). Independent of saving to an internal slot.
+                OutlinedButton(
+                    onClick = { onExport(slotName.trim().ifBlank { ExperimentStore.DEFAULT_SCHEDULE }) },
+                    modifier = Modifier.fillMaxWidth()
+                ) { Text("Export to file (Downloads)") }
                 Spacer(Modifier.height(12.dp))
                 Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
                     TextButton(onClick = onDismiss) { Text("Cancel") }
@@ -697,21 +753,27 @@ private fun SaveScheduleDialog(
 @Composable
 private fun LoadScheduleDialog(
     schedules: List<String>,
+    onImport: () -> Unit,
     onDismiss: () -> Unit,
     onDelete: (String) -> Unit,
     onLoad: (String) -> Unit
 ) {
-    var slots by remember { mutableStateOf(schedules) }
     Dialog(onDismissRequest = onDismiss) {
         Surface(shape = MaterialTheme.shapes.medium, tonalElevation = 8.dp, modifier = Modifier.padding(16.dp)) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text("Load Schedule", style = MaterialTheme.typography.titleMedium)
                 Spacer(Modifier.height(8.dp))
-                if (slots.isEmpty()) {
+                // Bring in an experiment JSON from the phone; it is saved as a slot and
+                // appears in the list below right away.
+                OutlinedButton(onClick = onImport, modifier = Modifier.fillMaxWidth()) {
+                    Text("Import from phone…")
+                }
+                Spacer(Modifier.height(8.dp))
+                if (schedules.isEmpty()) {
                     Text("No saved schedules yet.", style = MaterialTheme.typography.bodyMedium)
                 } else {
                     LazyColumn(modifier = Modifier.heightIn(max = 260.dp)) {
-                        items(slots, key = { it }) { name ->
+                        items(schedules, key = { it }) { name ->
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 verticalAlignment = Alignment.CenterVertically
@@ -721,7 +783,7 @@ private fun LoadScheduleDialog(
                                     modifier = Modifier.weight(1f).clickable { onLoad(name) }.padding(vertical = 10.dp)
                                 )
                                 if (name != ExperimentStore.DEFAULT_SCHEDULE) {
-                                    IconButton(onClick = { onDelete(name); slots = slots.filter { it != name } }) {
+                                    IconButton(onClick = { onDelete(name) }) {
                                         Icon(Icons.Rounded.Delete, contentDescription = "Delete")
                                     }
                                 }
