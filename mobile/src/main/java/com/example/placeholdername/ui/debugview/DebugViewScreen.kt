@@ -3,6 +3,7 @@ package com.BWPStudio.JITAIWizard.ui.debugview
 import android.app.Activity
 import android.content.Context
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -184,10 +185,12 @@ private fun EngineStatusChips() {
         EngineStatus.FINISHED -> MaterialTheme.colorScheme.primary
         else -> Color.Gray
     }
-    Row(
+    // FlowRow so the chips wrap onto a new line instead of squeezing + wrapping their
+    // labels (which made the row balloon vertically once the Event/Run chips appear at run start).
+    FlowRow(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
         horizontalArrangement = Arrangement.spacedBy(6.dp),
-        verticalAlignment = Alignment.CenterVertically
+        verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         AssistChip(onClick = {}, label = { Text("Engine: ${state.status.name}", fontSize = 11.sp) },
             colors = AssistChipDefaults.assistChipColors(labelColor = statusColor))
@@ -210,10 +213,12 @@ private fun TriggerQuickFireRow() {
         it.kind is com.example.jitaicompanion.convention.models.TriggerKind.Manual
     }
     if (manualTriggers.isEmpty()) return
-    Row(
+    // FlowRow so several manual triggers wrap onto new lines instead of overflowing the row.
+    FlowRow(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
         horizontalArrangement = Arrangement.spacedBy(6.dp),
-        verticalAlignment = Alignment.CenterVertically
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+        itemVerticalAlignment = Alignment.CenterVertically
     ) {
         Text("Triggers:", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         manualTriggers.forEach { t ->

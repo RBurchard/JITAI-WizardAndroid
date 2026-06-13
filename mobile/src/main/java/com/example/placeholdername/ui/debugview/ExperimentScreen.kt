@@ -51,8 +51,10 @@ import com.BWPStudio.JITAIWizard.experiment.Event
 import com.BWPStudio.JITAIWizard.experiment.ExperimentStore
 import com.BWPStudio.JITAIWizard.experiment.LogEvent
 import com.BWPStudio.JITAIWizard.ui.components.StringOptionDropdown
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import sh.calvin.reorderable.ReorderableItem
@@ -135,6 +137,22 @@ fun ExperimentScreen(onWearError: (String) -> Unit = {}) {
     val logger = app.logger
     val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH-mm-ss.SSS")
 
+    // Phone-side 1:1 CSV export (sensor stream + logs + interventions), gated on the same
+    // "Save Logs" toggle as the TSV log. Started when a manual run begins and finalized on
+    // stop/finish, mirroring the Control Station's multi-section CSV.
+    fun startCsvExport() {
+        if (!saveLogsBool) return
+        // participantId is the session/participant name; experiment name feeds only the RUNS
+        // section; the session notes are gathered from in-run Note entries at finalize.
+        app.csvLogger.start(experiment, participantId)
+    }
+    fun finalizeCsvExport() {
+        scope.launch {
+            val path = withContext(Dispatchers.IO) { app.csvLogger.finalizeExport() }
+            if (path != null) Toast.makeText(context, "CSV saved: $path", Toast.LENGTH_LONG).show()
+        }
+    }
+
     // Buffer for the Android navigation / home-back bar so bottom controls aren't hidden.
     val navBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
 
@@ -175,9 +193,11 @@ fun ExperimentScreen(onWearError: (String) -> Unit = {}) {
                                 eventToHighlight = list[0]
                                 logger.createLogFile(experiment, participantId, LocalDateTime.now().format(formatter), saveLogsBool)
                                 logger.log(LogEvent(eventType = "Experiment", value = "start"))
+                                startCsvExport()
                             } else {
                                 eventToHighlight = null
                                 logger.log(LogEvent(eventType = "Experiment", value = "stop"))
+                                finalizeCsvExport()
                             }
                         }, enabled = !editMode, modifier = Modifier.weight(1f)) { Text(if (running) "Stop" else "Start") }
 
@@ -450,6 +470,7 @@ fun ExperimentScreen(onWearError: (String) -> Unit = {}) {
                                         Toast.makeText(context, "Finished!", Toast.LENGTH_SHORT).show()
                                         eventToHighlight = null; running = false
                                         logger.log(LogEvent(eventType = "Experiment", value = "finished"))
+                                        finalizeCsvExport()
                                     }
                                     elapsedSeconds = 0
                                 }, modifier = Modifier.size(32.dp)) { Icon(Icons.AutoMirrored.Filled.ArrowForward, "Next") }

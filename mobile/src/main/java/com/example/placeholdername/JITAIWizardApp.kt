@@ -5,6 +5,7 @@ import com.BWPStudio.JITAIWizard.datalayer.WearSyncLogger
 import com.BWPStudio.JITAIWizard.experiment.ExperimentEngine
 import com.BWPStudio.JITAIWizard.experiment.ExperimentLogger
 import com.BWPStudio.JITAIWizard.experiment.ExperimentStore
+import com.BWPStudio.JITAIWizard.experiment.PhoneCsvLogger
 import com.BWPStudio.JITAIWizard.server.KtorServer
 import com.BWPStudio.JITAIWizard.server.ServerState
 import com.BWPStudio.JITAIWizard.server.UdpBeacon
@@ -19,6 +20,7 @@ import java.util.UUID
 class JITAIWizardApp : Application() {
 
     val logger = ExperimentLogger(this)
+    val csvLogger by lazy { PhoneCsvLogger(this) }
     val wearSyncLogger by lazy { WearSyncLogger(this) }
     lateinit var experimentStore: ExperimentStore
         private set

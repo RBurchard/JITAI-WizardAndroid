@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <b>Latest release:</b> <a href="https://github.com/BloodWolfPlayer/JITAI-WizardAndroid/releases">v1.1.0-beta</a> &middot; signed Phone APK + Wear OS APK
+  <b>Latest release:</b> <a href="https://github.com/BloodWolfPlayer/JITAI-WizardAndroid/releases">v1.2.0</a> &middot; signed Phone APK + Wear OS APK
 </p>
 
 _A research-grade intervention delivery system for Wear OS and Android._
@@ -22,7 +22,7 @@ _Project for the Bachelor of Science in the University of Siegen_
 ## Table of Contents
 
 1. [Overview](#overview)
-2. [Download & Install (Beta)](#download--install-beta)
+2. [Download & Install](#download--install)
 3. [System Architecture](#system-architecture)
 4. [Requirements](#requirements)
 5. [Building the Project](#building-the-project)
@@ -50,7 +50,7 @@ Both Android modules share the application ID `com.BWPStudio.JITAIWizard`, which
 
 ---
 
-## Download & Install (Beta)
+## Download & Install
 
 > Just want to run it? Grab the signed APKs from the [**Releases page**](https://github.com/BloodWolfPlayer/JITAI-WizardAndroid/releases) -- no build tools required.
 
@@ -58,8 +58,8 @@ Every release ships both APKs signed with the **same key**, so the Wearable Data
 
 | File | Install on | Minimum OS |
 |------|-----------|------------|
-| `JITAI-Wizard-Phone-v1.1.0-beta.apk` | Android phone | Android 10 (API 29) |
-| `JITAI-Wizard-Watch-v1.1.0-beta.apk` | Wear OS watch | Wear OS 4.0 (API 33) |
+| `JITAI-Wizard-Phone-v1.2.0.apk` | Android phone | Android 10 (API 29) |
+| `JITAI-Wizard-Watch-v1.2.0.apk` | Wear OS watch | Wear OS 4.0 (API 33) |
 
 1. On both devices, allow installs from your browser/file manager (**Settings → Apps → Install unknown apps**).
 2. Download and install the **Phone** APK on the Android phone.
@@ -210,6 +210,7 @@ As close as possible to Robin Buchards Features, which include:
 - The Save dialog has an **Export to file (Downloads)** button that writes the current experiment as a `.json` to `Downloads/JITAI_WIZARD_experiments/` (visible in the Files app / over USB) and shows the saved path in a toast
 - Three extra templates ship bundled and appear ready-to-load in the Load dialog -- **Distraction Combo - No Games**, **Alternate Microgame - Lock Picking**, and **Stand Still Only** -- alongside the seeded default. They mirror the Control Station's `Assets/experiment_*.json`. Each is a single hand-wash cycle (Wizard-of-Oz, no tutorial) with a clearly marked HW-timer start/stop. Deleting a bundled template will not bring it back on the next launch.
 - Optional TSV log output to Downloads/JITAI_WIZARD_logs
+- Optional standalone **CSV export** to `Downloads/JITAI_WIZARD_csv/` (same "Save Logs" toggle): a 1:1 reproduction of the ControlStation multi-section CSV, captured on the phone alone — no ControlStation required
 
 ### HTTP Server
 
@@ -543,9 +544,24 @@ See the [HTTP Server](#http-server) section of the Phone Application chapter abo
 
 ### Where sensor data is stored
 
-Raw sensor data (heart rate, accelerometer, gyroscope, rotation, barometer, light, steps) is **not stored locally on the phone**. It is streamed in real time to ControlStation over the `/stream` WebSocket and persisted in ControlStation's SQLite database (`%APPDATA%\OcdWizard\data.db`), table `watch_data`. If ControlStation is not connected when data arrives, those batches are lost (the in-memory relay buffer holds at most 64 batches).
+Raw sensor data (heart rate, accelerometer, gyroscope, rotation, barometer, light, steps) is streamed in real time to ControlStation over the `/stream` WebSocket and persisted in ControlStation's SQLite database (`%APPDATA%\OcdWizard\data.db`), table `watch_data`. If ControlStation is not connected when data arrives, those batches are not stored there (the in-memory relay buffer holds at most 64 batches).
 
-To export sensor data as a CSV, use the Export function in ControlStation. See the ControlStation README (JITAI-WizardControlStation, same GitHub account) for the full export format.
+To export sensor data as a CSV you have two options: use the Export function in ControlStation (see the ControlStation README for the format), **or** enable the phone-side CSV export below to capture an equivalent file with only the phone present.
+
+### Phone-Side CSV Export (1:1 with ControlStation)
+
+When **Save Logs** is enabled, starting a manual run on the Experiment screen begins capturing the live watch stream to a CSV; stopping or finishing the run writes the finished file to `Downloads/JITAI_WIZARD_csv/` (`{experiment}_{participant}_{timestamp}.csv`) and shows the path in a toast. The file reproduces the ControlStation export layout section-for-section:
+
+| Section | Source on phone | Fidelity |
+|---------|-----------------|----------|
+| `=== SESSION ===` | `name` = participant/session name (`participantId`); `notes` = the in-run 📝 Note entries (joined); `participants` = same participant name — matching the Control Station's `sessions.name` / `sessions.notes` / `participant_key` | Full |
+| `=== WATCH DATA ===` | live `WatchDataRelay` stream (`participant_label,participant_key,timestamp,heart_rate,accel_x/y/z,gyro_x/y/z,rot_w/x/y/z,baro_hpa,light_lux,step_count`) | Full — every snapshot |
+| `=== SESSION LOGS ===` | `SessionLogStore` ring buffer | Full (last 2000 entries) |
+| `=== INTERVENTIONS ===` | synthesised from the session-log stream | Timing/response/reaction faithful; `game_type`/`notification_type` left blank |
+| `=== EXPERIMENT RUNS ===` | run id + timing | Single row for the run |
+| `=== DISTRACTION RUNS ===` | synthesised from intervention send/response pairs | Best-effort |
+
+To protect the phone, sensor rows are written **one buffered append per watch batch** (the watch already groups snapshots into ~100 ms batches at its 50 Hz cap), so a full-rate stream costs only ~10 disk flushes per second. Captured by `PhoneCsvLogger`; covers the manual Start/Stop/Finish flow (engine "Auto" runs are not yet wired).
 
 ### Phone-Side Logs
 
