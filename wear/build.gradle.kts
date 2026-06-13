@@ -6,9 +6,10 @@ plugins {
     id("org.jetbrains.kotlin.plugin.serialization")
 }
 
+val keystorePropertiesFile = rootProject.file("keystore.properties")
+val hasReleaseKeystore = keystorePropertiesFile.exists()
 val keystoreProperties = Properties().apply {
-    val f = rootProject.file("keystore.properties")
-    if (f.exists()) load(f.inputStream())
+    if (hasReleaseKeystore) load(keystorePropertiesFile.inputStream())
 }
 
 android {
@@ -20,11 +21,16 @@ android {
     }
 
     signingConfigs {
-        create("release") {
-            keyAlias = keystoreProperties["keyAlias"] as String
-            keyPassword = keystoreProperties["keyPassword"] as String
-            storeFile = file(keystoreProperties["storeFile"] as String)
-            storePassword = keystoreProperties["storePassword"] as String
+        // Only create the release signing config when keystore.properties exists.
+        // Contributors without the keystore skip this and fall back to the debug
+        // signing config below (see buildTypes.release).
+        if (hasReleaseKeystore) {
+            create("release") {
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+                storeFile = file(keystoreProperties.getProperty("storeFile"))
+                storePassword = keystoreProperties.getProperty("storePassword")
+            }
         }
     }
 
@@ -40,7 +46,14 @@ android {
     buildTypes {
         release {
             isMinifyEnabled = false
-            signingConfig = signingConfigs.getByName("release")
+            // Real release key when available, otherwise the shared debug key so the
+            // mobile/wear signatures still match (required by the Wearable Data Layer
+            // for watch <-> phone communication).
+            signingConfig = if (hasReleaseKeystore) {
+                signingConfigs.getByName("release")
+            } else {
+                signingConfigs.getByName("debug")
+            }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
