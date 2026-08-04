@@ -1,6 +1,7 @@
 package com.BWPStudio.JITAIWizard.ui.tasks
 
 import android.content.ContentValues
+import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Paint
@@ -25,17 +26,26 @@ import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.BWPStudio.JITAIWizard.R
+import com.example.jitaicompanion.convention.locale.LocaleController
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 class DrawActivity : ComponentActivity() {
 
-    var prompt = "Draw something!"
+    lateinit var prompt: String
+
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(LocaleController.wrap(newBase))
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        prompt = intent.getStringExtra("prompt") ?: "Draw a tree"
+        // "prompt" normally arrives from the researcher via this Intent extra — that's
+        // experimental data and must not be localized. Only the fallback below is app copy.
+        prompt = intent.getStringExtra("prompt") ?: getString(R.string.draw_task_default_prompt)
         setContent { DrawScreen(prompt = prompt, onDone = { finish() }) }
     }
 }
@@ -57,15 +67,16 @@ fun DrawScreen(prompt: String, onDone: () -> Unit) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(prompt, color = MaterialTheme.colorScheme.onPrimary,
-                    style = MaterialTheme.typography.titleMedium)
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.weight(1f))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    TextButton(onClick = { paths.clear() }) { Text("Clear", color = MaterialTheme.colorScheme.onPrimary) }
+                    TextButton(onClick = { paths.clear() }) { Text(stringResource(R.string.draw_task_clear), color = MaterialTheme.colorScheme.onPrimary) }
                     Button(onClick = {
                         scope.launch(Dispatchers.IO) {
                             saveBitmap(context, paths)
                         }
                         onDone()
-                    }) { Text("Done") }
+                    }) { Text(stringResource(R.string.common_done)) }
                 }
             }
         }

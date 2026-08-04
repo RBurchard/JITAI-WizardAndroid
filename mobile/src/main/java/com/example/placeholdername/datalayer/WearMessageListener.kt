@@ -5,6 +5,7 @@ import android.widget.Toast
 import com.example.jitaicompanion.convention.Protocol
 import com.example.jitaicompanion.convention.models.WatchDataBatch
 import com.BWPStudio.JITAIWizard.JITAIWizardApp
+import com.BWPStudio.JITAIWizard.R
 import com.BWPStudio.JITAIWizard.experiment.InterventionResponse
 import com.BWPStudio.JITAIWizard.experiment.InterventionResponseBus
 import com.BWPStudio.JITAIWizard.experiment.LogEvent
@@ -64,7 +65,9 @@ class WearMessageListener : WearableListenerService() {
         )
 
         scope.launch(Dispatchers.Main) {
-            Toast.makeText(applicationContext, "Watch: $data${reactionMs?.let { " (${it}ms)" } ?: ""}", Toast.LENGTH_SHORT).show()
+            val base = applicationContext.getString(R.string.wear_toast_watch_response, data)
+            val message = reactionMs?.let { base + applicationContext.getString(R.string.wear_toast_reaction_suffix, it) } ?: base
+            Toast.makeText(applicationContext, message, Toast.LENGTH_SHORT).show()
         }
 
         reactionMs?.let { ServerState.lastReactionTimeMs = it }

@@ -20,6 +20,7 @@ import androidx.health.services.client.data.Availability
 import androidx.health.services.client.data.DataPointContainer
 import androidx.health.services.client.data.DataType
 import androidx.health.services.client.data.DeltaDataType
+import com.example.jitaicompanion.R
 import com.example.jitaicompanion.convention.models.WatchDataBatch
 import com.example.jitaicompanion.convention.models.WatchDataSnapshot
 import com.example.jitaicompanion.datalayer.WearMessageSender
@@ -318,7 +319,7 @@ class WatchDataService : Service(), SensorEventListener {
     private fun createNotificationChannel() {
         val channel = NotificationChannel(
             CHANNEL_ID,
-            "Watch Data Collection",
+            getString(R.string.notif_channel_watch_data_name),
             NotificationManager.IMPORTANCE_LOW
         )
         getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
@@ -326,8 +327,8 @@ class WatchDataService : Service(), SensorEventListener {
 
     private fun buildNotification(): Notification =
         Notification.Builder(this, CHANNEL_ID)
-            .setContentTitle("JITAI Companion")
-            .setContentText("Collecting sensor data")
+            .setContentTitle(getString(R.string.app_name))
+            .setContentText(getString(R.string.notif_watch_data_text))
             .setSmallIcon(android.R.drawable.ic_menu_info_details)
             .build()
 }

@@ -7,6 +7,7 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import androidx.core.content.ContextCompat
+import com.example.jitaicompanion.R
 import com.example.jitaicompanion.convention.Protocol
 import com.example.jitaicompanion.convention.models.Intervention
 import com.example.jitaicompanion.convention.models.NotificationType
@@ -15,6 +16,7 @@ import com.example.jitaicompanion.ui.InterventionActivity
 import com.example.jitaicompanion.ui.games.MicrogameActivity
 import com.google.android.gms.wearable.MessageEvent
 import com.google.android.gms.wearable.WearableListenerService
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 class WearMessageListener : WearableListenerService() {
@@ -104,9 +106,16 @@ class WearMessageListener : WearableListenerService() {
 
     private fun showCheckPhoneScreen() {
         mainHandler.post {
+            val intervention = Intervention(
+                id = "phone_task",
+                type = "Text",
+                notification = NotificationType.VIBRATION1,
+                message = getString(R.string.intervention_phone_task_message),
+                durationSeconds = 30
+            )
             val intent = Intent(applicationContext, InterventionActivity::class.java).apply {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-                putExtra(Protocol.KEY_INTERVENTION, """{"id":"phone_task","type":"Text","notification":"VIBRATION1","message":"Check your phone!","durationSeconds":30}""")
+                putExtra(Protocol.KEY_INTERVENTION, json.encodeToString(intervention))
             }
             startActivity(intent)
         }

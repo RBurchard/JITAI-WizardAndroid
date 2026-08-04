@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Auto-generated English source strings for this screen area.
+  Watch app UI text. Keep entries SHORT — see ui/layout/WearDimens.kt.
+  ADDING A LANGUAGE: copy this file into res/values-<tag>/ and translate the values.
+-->
+<resources>
+    <!-- LockPickingGameActivity.kt:112 -->
+    <string name="game_lockpicking_hold_still">Hou stil!</string>
+    <!-- LockPickingGameActivity.kt:229 -->
+    <string name="game_lockpicking_mistimed">Te vroeg/laat!</string>
+    <!-- LockPickingGameActivity.kt:110 -->
+    <string name="game_lockpicking_stage_indicator">Fase %1$d/%2$d</string>
+    <!-- LockPickingGameActivity.kt:171 -->
+    <string name="game_lockpicking_swipe_circle">Veeg in een cirkel!</string>
+    <!-- LockPickingGameActivity.kt:235 -->
+    <string name="game_lockpicking_tap_button">TIK!</string>
+    <!-- LockPickingGameActivity.kt:218 -->
+    <string name="game_lockpicking_tap_green_zone">Tik in de groene zone!</string>
+    <!-- LockPickingGameActivity.kt:36 -->
+    <string name="game_lockpicking_title">Slot kraken</string>
+    <!-- LockPickingGameActivity.kt:38 -->
+    <string name="game_lockpicking_tutorial">Kraak het slot in 3 fasen: 1) hou je pols stil, 2) veeg in een cirkel om de wijzerplaat te draaien, 3) tik op de knop wanneer de bewegende stip in de groene zone is.</string>
+    <!-- LockPickingGameActivity.kt:226 -->
+    <string name="game_result_perfect">Perfect!</string>
+    <!-- SimonSaysGameActivity.kt:108 -->
+    <string name="game_simonsays_good_watch">Goed! Kijk...</string>
+    <!-- SimonSaysGameActivity.kt:21 -->
+    <string name="game_simonsays_title">Simon Zegt</string>
+    <!-- SimonSaysGameActivity.kt:23 -->
+    <string name="game_simonsays_tutorial">Kijk welke gekleurde vakjes oplichten en tik ze daarna in dezelfde volgorde na. Elke ronde wordt de reeks één stap langer — haal 4 rondes om te winnen!</string>
+    <!-- SimonSaysGameActivity.kt:40 -->
+    <string name="game_simonsays_watch_carefully">Kijk goed!</string>
+    <!-- SimonSaysGameActivity.kt:96 -->
+    <string name="game_simonsays_wrong_restarting">Fout! Opnieuw starten...</string>
+    <!-- SimonSaysGameActivity.kt:65 -->
+    <string name="game_simonsays_your_turn_round">Jouw beurt! Ronde %1$d/%2$d</string>
+    <!-- StandStillGameActivity.kt:90 -->
+    <string name="game_standstill_hold_steady">Blijf stabiel...</string>
+    <!-- StandStillGameActivity.kt:90 -->
+    <string name="game_standstill_keep_still">Blijf stil!</string>
+    <!-- StandStillGameActivity.kt:96 -->
+    <string name="game_standstill_seconds_remaining">%1$d s</string>
+    <!-- StandStillGameActivity.kt:26 -->
+    <string name="game_standstill_title">Stilstaan</string>
+    <!-- StandStillGameActivity.kt:28 -->
+    <string name="game_standstill_tutorial">Hou je arm helemaal stil tot de ring vol is. Als je beweegt, wordt de timer gereset en begin je opnieuw!</string>
+    <!-- TriviaGameActivity.kt:77 -->
+    <string name="game_trivia_answer_option">%1$s: %2$s</string>
+    <!-- TriviaGameActivity.kt:66 -->
+    <string name="game_trivia_correct">Correct! ★</string>
+    <!-- TriviaGameActivity.kt:25 -->
+    <string name="game_trivia_title">Quiz</string>
+    <!-- TriviaGameActivity.kt:27 -->
+    <string name="game_trivia_tutorial">Lees de vraag en tik op het antwoord (A, B, C of D) dat volgens jou juist is.</string>
+    <!-- TriviaGameActivity.kt:70 -->
+    <string name="game_trivia_wrong_answer_was">Fout! Het juiste antwoord was: %1$s</string>
+    <!-- MicrogameActivity.kt:107 -->
+    <string name="microgame_tutorial_start_button">Start</string>
+    <!-- MicrogameActivity.kt:49 -->
+    <string name="microgame_tutorial_text_default">Volg de instructies op het scherm.</string>
+    <!-- MicrogameActivity.kt:47 -->
+    <string name="microgame_tutorial_title_default">Minigame</string>
+    <!-- TriviaGameActivity.kt:108 -->
+    <string-array name="trivia_fallback_q10_answers">
+        <item>Atlantische</item>
+        <item>Indische</item>
+        <item>Arctische</item>
+        <item>Stille</item>
+    </string-array>
+    <!-- TriviaGameActivity.kt:108 -->
+    <string name="trivia_fallback_q10_question">Wat is de grootste oceaan?</string>
+    <!-- TriviaGameActivity.kt:99 -->
+    <string-array name="trivia_fallback_q1_answers">
+        <item>Berlijn</item>
+        <item>Parijs</item>
+        <item>Madrid</item>
+        <item>Rome</item>
+    </string-array>
+    <!-- TriviaGameActivity.kt:99 -->
+    <string name="trivia_fallback_q1_question">Wat is de hoofdstad van Frankrijk?</string>
+    <!-- TriviaGameActivity.kt:100 -->
+    <string name="trivia_fallback_q2_question">Hoeveel zijden heeft een zeshoek?</string>
+    <!-- TriviaGameActivity.kt:101 -->
+    <string-array name="trivia_fallback_q3_answers">
+        <item>Groen</item>
+        <item>Rood</item>
+        <item>Blauw</item>
+        <item>Geel</item>
+    </string-array>
+    <!-- TriviaGameActivity.kt:101 -->
+    <string name="trivia_fallback_q3_question">Welke kleur heeft de lucht op een heldere dag?</string>
+    <!-- TriviaGameActivity.kt:102 -->
+    <string-array name="trivia_fallback_q4_answers">
+        <item>Venus</item>
+        <item>Aarde</item>
+        <item>Mars</item>
+        <item>Mercurius</item>
+    </string-array>
+    <!-- TriviaGameActivity.kt:102 -->
+    <string name="trivia_fallback_q4_question">Welke planeet staat het dichtst bij de zon?</string>
+    <!-- TriviaGameActivity.kt:103 -->
+    <string name="trivia_fallback_q5_question">Wat is 7 × 8?</string>
+    <!-- TriviaGameActivity.kt:104 -->
+    <string name="trivia_fallback_q6_question">Hoeveel continenten zijn er?</string>
+    <!-- TriviaGameActivity.kt:105 -->
+    <string-array name="trivia_fallback_q7_answers">
+        <item>Zout</item>
+        <item>Suiker</item>
+        <item>Water</item>
+        <item>Zuur</item>
+    </string-array>
+    <!-- TriviaGameActivity.kt:105 -->
+    <string name="trivia_fallback_q7_question">Hoe heet H2O ook wel?</string>
+    <!-- TriviaGameActivity.kt:106 -->
+    <string-array name="trivia_fallback_q8_answers">
+        <item>Kat</item>
+        <item>Hond</item>
+        <item>Paard</item>
+        <item>Konijn</item>
+    </string-array>
+    <!-- TriviaGameActivity.kt:106 -->
+    <string name="trivia_fallback_q8_question">Welk dier staat bekend als de beste vriend van de mens?</string>
+    <!-- TriviaGameActivity.kt:107 -->
+    <string name="trivia_fallback_q9_question">Hoeveel minuten zitten er in een uur?</string>
+</resources>

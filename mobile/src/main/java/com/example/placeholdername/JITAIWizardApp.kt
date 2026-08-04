@@ -1,6 +1,7 @@
 package com.BWPStudio.JITAIWizard
 
 import android.app.Application
+import android.content.Context
 import com.BWPStudio.JITAIWizard.datalayer.WearSyncLogger
 import com.BWPStudio.JITAIWizard.experiment.ExperimentEngine
 import com.BWPStudio.JITAIWizard.experiment.ExperimentLogger
@@ -12,12 +13,17 @@ import com.BWPStudio.JITAIWizard.server.UdpBeacon
 import com.BWPStudio.JITAIWizard.settings.SettingsKeys
 import com.BWPStudio.JITAIWizard.settings.SettingsRepository
 import com.BWPStudio.JITAIWizard.triggers.TriggerEngine
+import com.example.jitaicompanion.convention.locale.LocaleController
 import com.example.jitaicompanion.convention.models.ParticipantInfo
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import java.util.UUID
 
 class JITAIWizardApp : Application() {
+
+    override fun attachBaseContext(base: Context) {
+        super.attachBaseContext(LocaleController.wrap(base))
+    }
 
     val logger = ExperimentLogger(this)
     val csvLogger by lazy { PhoneCsvLogger(this) }

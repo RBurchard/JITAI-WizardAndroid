@@ -10,9 +10,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.BWPStudio.JITAIWizard.JITAIWizardApp
+import com.BWPStudio.JITAIWizard.R
 import com.BWPStudio.JITAIWizard.datalayer.WearMessageSender
 import com.BWPStudio.JITAIWizard.experiment.EngineStatus
 import com.BWPStudio.JITAIWizard.server.ServerState
@@ -38,16 +40,16 @@ private fun forceEndApp(context: Context) {
 @Composable
 fun DebugViewScreen(onBack: () -> Unit) {
     var selectedTab by remember { mutableStateOf(0) }
-    val tabs = listOf("Control", "Experiment")
+    val tabs = listOf(stringResource(R.string.debugview_tab_control), stringResource(R.string.debugview_tab_experiment))
     var wearErrorMessage by remember { mutableStateOf<String?>(null) }
 
     wearErrorMessage?.let { message ->
         AlertDialog(
             onDismissRequest = { wearErrorMessage = null },
-            title = { Text("WearOS Error") },
+            title = { Text(stringResource(R.string.debugview_wear_error_title)) },
             text = { Text(message) },
             confirmButton = {
-                TextButton(onClick = { wearErrorMessage = null }) { Text("OK") }
+                TextButton(onClick = { wearErrorMessage = null }) { Text(stringResource(R.string.common_ok)) }
             }
         )
     }
@@ -65,14 +67,14 @@ fun DebugViewScreen(onBack: () -> Unit) {
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("DEBUG MODE", color = MaterialTheme.colorScheme.onErrorContainer,
+                Text(stringResource(R.string.debugview_banner_debug_mode), color = MaterialTheme.colorScheme.onErrorContainer,
                     style = MaterialTheme.typography.labelLarge)
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     TextButton(onClick = { forceEndApp(context) }) {
-                        Text("⏻ Force End", color = MaterialTheme.colorScheme.error)
+                        Text(stringResource(R.string.debugview_button_force_end), color = MaterialTheme.colorScheme.error)
                     }
                     TextButton(onClick = onBack) {
-                        Text("Back", color = MaterialTheme.colorScheme.onErrorContainer)
+                        Text(stringResource(R.string.common_back), color = MaterialTheme.colorScheme.onErrorContainer)
                     }
                 }
             }
@@ -96,6 +98,21 @@ fun DebugViewScreen(onBack: () -> Unit) {
     }
 }
 
+/**
+ * State of an in-flight watch ping. The UI renders the localized label from this enum — it
+ * never compares against localized/mutated status text (bug #3: previously "pinging…" was both
+ * a displayed sentinel and a string compared with ==, which would break once localized).
+ */
+private enum class PingState { IDLE, PINGING, FAILED, TIMEOUT }
+
+@Composable
+private fun pingStatusLabel(state: PingState): String? = when (state) {
+    PingState.IDLE -> null
+    PingState.PINGING -> stringResource(R.string.watchbar_ping_in_progress)
+    PingState.FAILED -> stringResource(R.string.watchbar_ping_failed)
+    PingState.TIMEOUT -> stringResource(R.string.watchbar_ping_no_reply)
+}
+
 @Composable
 private fun WatchStatusBar(onWearError: (String) -> Unit = {}) {
     val context = LocalContext.current
@@ -103,7 +120,7 @@ private fun WatchStatusBar(onWearError: (String) -> Unit = {}) {
 
     // null = still checking, empty = not found, non-empty = found nodes
     var watchNodes by remember { mutableStateOf<List<Node>?>(null) }
-    var pingStatus by remember { mutableStateOf("") }
+    var pingState by remember { mutableStateOf(PingState.IDLE) }
     var bpm by remember { mutableFloatStateOf(ServerState.lastHeartRate) }
     var lastAction by remember { mutableStateOf(ServerState.lastAction) }
 
@@ -121,9 +138,9 @@ private fun WatchStatusBar(onWearError: (String) -> Unit = {}) {
     }
 
     val (statusText, statusColor) = when {
-        watchNodes == null -> "Watch: checking…" to Color.Gray
-        watchNodes!!.isEmpty() -> "Watch: NOT reachable (app not found)" to MaterialTheme.colorScheme.error
-        else -> "Watch: ${watchNodes!!.joinToString { it.displayName }}" to Color(0xFF2E7D32)
+        watchNodes == null -> stringResource(R.string.watchbar_status_checking) to Color.Gray
+        watchNodes!!.isEmpty() -> stringResource(R.string.watchbar_status_not_reachable) to MaterialTheme.colorScheme.error
+        else -> stringResource(R.string.watchbar_status_connected, watchNodes!!.joinToString { it.displayName }) to Color(0xFF2E7D32)
     }
 
     Surface(
@@ -138,36 +155,36 @@ private fun WatchStatusBar(onWearError: (String) -> Unit = {}) {
             Text(statusText, color = statusColor, fontSize = 12.sp, modifier = Modifier.weight(1f))
             if (watchNodes != null && watchNodes!!.isNotEmpty()) {
                 if (bpm > 0f) {
-                    Text("${bpm.toInt()} BPM", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(stringResource(R.string.watchbar_heart_rate, bpm.toInt()), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 } else {
-                    Text("No HR signal", fontSize = 12.sp, color = MaterialTheme.colorScheme.error)
+                    Text(stringResource(R.string.watchbar_no_hr_signal), fontSize = 12.sp, color = MaterialTheme.colorScheme.error)
                 }
             }
             if (lastAction.isNotEmpty()) {
-                Text("Last: $lastAction", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                Text(stringResource(R.string.watchbar_last_action, lastAction), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1)
             }
-            if (pingStatus.isNotEmpty()) {
-                Text(pingStatus, fontSize = 11.sp, color = Color.Gray)
+            pingStatusLabel(pingState)?.let { label ->
+                Text(label, fontSize = 11.sp, color = Color.Gray)
             }
             TextButton(
                 onClick = {
-                    pingStatus = "pinging…"
+                    pingState = PingState.PINGING
                     scope.launch {
-                        WearMessageSender(context).sendPing(onError = { pingStatus = "ping failed" })
+                        WearMessageSender(context).sendPing(onError = { pingState = PingState.FAILED })
                         delay(2000)
-                        if (pingStatus == "pinging…") pingStatus = "no reply"
+                        if (pingState == PingState.PINGING) pingState = PingState.TIMEOUT
                     }
                 },
                 contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
             ) {
-                Text("Ping", fontSize = 11.sp)
+                Text(stringResource(R.string.watchbar_button_ping), fontSize = 11.sp)
             }
             TextButton(
                 onClick = { WearMessageSender(context).sendExit(onError = onWearError) },
                 contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
             ) {
-                Text("Close Watch", fontSize = 11.sp)
+                Text(stringResource(R.string.watchbar_button_close_watch), fontSize = 11.sp)
             }
         }
     }
@@ -192,14 +209,14 @@ private fun EngineStatusChips() {
         horizontalArrangement = Arrangement.spacedBy(6.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        AssistChip(onClick = {}, label = { Text("Engine: ${state.status.name}", fontSize = 11.sp) },
+        AssistChip(onClick = {}, label = { Text(stringResource(R.string.engine_chip_engine, state.status.name), fontSize = 11.sp) },
             colors = AssistChipDefaults.assistChipColors(labelColor = statusColor))
-        AssistChip(onClick = {}, label = { Text("Mode: ${state.mode.name}", fontSize = 11.sp) })
+        AssistChip(onClick = {}, label = { Text(stringResource(R.string.engine_chip_mode, state.mode.name), fontSize = 11.sp) })
         state.currentEvent?.let { ev ->
-            AssistChip(onClick = {}, label = { Text("Event: ${ev.type}", fontSize = 11.sp) })
+            AssistChip(onClick = {}, label = { Text(stringResource(R.string.engine_chip_event, ev.type), fontSize = 11.sp) })
         }
         state.runId?.let { rid ->
-            AssistChip(onClick = {}, label = { Text("Run: ${rid.take(8)}", fontSize = 10.sp) })
+            AssistChip(onClick = {}, label = { Text(stringResource(R.string.engine_chip_run, rid.take(8)), fontSize = 10.sp) })
         }
     }
 }
@@ -220,13 +237,13 @@ private fun TriggerQuickFireRow() {
         verticalArrangement = Arrangement.spacedBy(4.dp),
         itemVerticalAlignment = Alignment.CenterVertically
     ) {
-        Text("Triggers:", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(stringResource(R.string.trigger_quickfire_label), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         manualTriggers.forEach { t ->
             FilledTonalButton(
                 onClick = { ManualTriggerSource.fire(t.id, source = "manual-phone", details = t.name) },
                 contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
             ) {
-                Text("Fire ${t.name}", fontSize = 11.sp)
+                Text(stringResource(R.string.trigger_quickfire_fire_button, t.name), fontSize = 11.sp)
             }
         }
     }

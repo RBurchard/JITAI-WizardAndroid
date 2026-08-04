@@ -11,21 +11,22 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.wear.compose.material3.CircularProgressIndicator
 import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.Text
+import com.example.jitaicompanion.R
+import com.example.jitaicompanion.ui.layout.ssp
 import kotlinx.coroutines.delay
 import kotlin.math.sqrt
 
 class StandStillGameActivity : MicrogameActivity(), SensorEventListener {
 
     override val timeoutSeconds = 30
-    override val tutorialTitle = "Stand Still"
-    override val tutorialText =
-        "Hold your arm completely still until the ring fills up. If you move, the timer resets and you start over!"
+    override val tutorialTitleRes = R.string.game_standstill_title
+    override val tutorialTextRes = R.string.game_standstill_tutorial
 
     private lateinit var sensorManager: SensorManager
     private var currentMagnitude = 0f
@@ -87,14 +88,18 @@ class StandStillGameActivity : MicrogameActivity(), SensorEventListener {
                 )
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
-                        text = if (isMoving) "Keep still!" else "Hold steady...",
-                        fontSize = 14.sp,
+                        text = if (isMoving) {
+                            stringResource(R.string.game_standstill_keep_still)
+                        } else {
+                            stringResource(R.string.game_standstill_hold_steady)
+                        },
+                        fontSize = 14.ssp,
                         textAlign = TextAlign.Center
                     )
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        text = "${(targetSeconds - elapsed).toInt()}s",
-                        fontSize = 22.sp,
+                        text = stringResource(R.string.game_standstill_seconds_remaining, (targetSeconds - elapsed).toInt()),
+                        fontSize = 22.ssp,
                         color = if (isMoving) Color.Red else Color.Green
                     )
                 }

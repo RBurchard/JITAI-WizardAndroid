@@ -3,6 +3,7 @@ package com.BWPStudio.JITAIWizard.ui.userview
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.BWPStudio.JITAIWizard.R
 import com.BWPStudio.JITAIWizard.datalayer.WatchDataRelay
 import com.BWPStudio.JITAIWizard.datalayer.WearMessageSender
 import com.BWPStudio.JITAIWizard.server.ServerState
@@ -17,7 +18,7 @@ import kotlinx.coroutines.tasks.await
 
 data class UserViewUiState(
     val odiState: OdiAnimationState = OdiAnimationState.IDLE,
-    val odiMessage: String = "Monitoring...",
+    val odiMessage: String = "",
     val lastBpm: Int = 0,
     val lastReactionTimeMs: Long? = null,
     val lastAction: String = "",
@@ -27,7 +28,9 @@ data class UserViewUiState(
 
 class UserViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val _uiState = MutableStateFlow(UserViewUiState())
+    private val _uiState = MutableStateFlow(
+        UserViewUiState(odiMessage = application.getString(R.string.odi_line_idle_monitoring))
+    )
     val uiState = _uiState.asStateFlow()
 
     private var _wasPreviouslyConnected = false

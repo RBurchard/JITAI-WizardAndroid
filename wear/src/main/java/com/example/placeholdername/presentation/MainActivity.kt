@@ -23,6 +23,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
@@ -39,10 +42,17 @@ import androidx.wear.compose.material3.ScreenScaffold
 import androidx.wear.compose.material3.Text
 import androidx.wear.compose.ui.tooling.preview.WearPreviewDevices
 import androidx.wear.compose.ui.tooling.preview.WearPreviewFontScales
+import com.example.jitaicompanion.R
 import com.example.jitaicompanion.presentation.theme.JitaiCompanionTheme
 import com.example.jitaicompanion.service.WatchDataService
+import com.example.jitaicompanion.ui.layout.ProvideWearDimens
+import com.example.jitaicompanion.ui.layout.sdp
+import com.example.jitaicompanion.ui.layout.ssp
+import com.example.jitaicompanion.ui.layout.wearDimens
 import com.example.jitaicompanion.ui.odi.OdiAnimationState
 import com.example.jitaicompanion.ui.odi.OdiCharacter
+import com.example.jitaicompanion.ui.settings.SettingsScreen
+import androidx.compose.ui.res.stringResource
 import kotlin.system.exitProcess
 
 class MainActivity : ComponentActivity() {
@@ -176,6 +186,7 @@ class MainActivity : ComponentActivity() {
 fun WearApp(onOdiClick: () -> Unit, onForceEnd: () -> Unit = {}) {
     val heartRate by WatchDataService.heartRateState.collectAsState()
     val isRunning by WatchDataService.isRunning.collectAsState()
+    var showSettings by remember { mutableStateOf(false) }
 
     val infiniteTransition = rememberInfiniteTransition(label = "heartPulse")
     val heartScale by infiniteTransition.animateFloat(
@@ -189,76 +200,93 @@ fun WearApp(onOdiClick: () -> Unit, onForceEnd: () -> Unit = {}) {
     )
 
     JitaiCompanionTheme {
-        AppScaffold {
-            ScreenScaffold {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        ProvideWearDimens {
+            AppScaffold {
+                ScreenScaffold {
+                    if (showSettings) {
+                        SettingsScreen(
+                            onBack = { showSettings = false },
+                            onForceEnd = onForceEnd
+                        )
+                        return@ScreenScaffold
+                    }
 
-                    // BPM badge anchored to the left edge
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.CenterStart
-                    ) {
+                    val dimens = wearDimens
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+
+                        // BPM badge anchored to the left edge
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.CenterStart
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(start = 14.sdp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(
+                                    text = "♥",
+                                    color = Color(0xFFEF5350),
+                                    fontSize = 14.ssp,
+                                    modifier = Modifier.scale(if (heartRate > 0) heartScale else 1f)
+                                )
+                                Text(
+                                    text = if (heartRate > 0f) "${heartRate.toInt()}" else stringResource(R.string.wear_main_hr_no_value),
+                                    color = Color.White,
+                                    fontSize = 18.ssp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(stringResource(R.string.wear_main_unit_bpm), color = Color(0xFF9E9E9E), fontSize = 9.ssp)
+                            }
+                        }
+
+                        // Odi centered (unchanged)
                         Column(
-                            modifier = Modifier.padding(start = 14.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center,
+                            modifier = Modifier.clickable {
+                                Log.d("MainActivity", "Odi clicked - forcing permission check")
+                                onOdiClick()
+                            }
+                        ) {
+                            OdiCharacter(
+                                state = when {
+                                    heartRate > 120f -> OdiAnimationState.CONCERNED
+                                    heartRate > 0f -> OdiAnimationState.IDLE
+                                    else -> OdiAnimationState.THINKING
+                                },
+                                size = dimens.scaled(140.dp)
+                            )
+                            Spacer(Modifier.height(8.sdp))
+                            Text(
+                                text = if (isRunning) stringResource(R.string.wear_main_status_watching) else stringResource(R.string.wear_main_status_greeting),
+                                fontSize = dimens.titleTextSize,
+                                fontWeight = FontWeight.Medium
+                            )
+                            Text(
+                                text = when {
+                                    heartRate > 0 -> stringResource(R.string.wear_main_hint_active)
+                                    !isRunning -> stringResource(R.string.wear_main_hint_grant_permissions)
+                                    else -> stringResource(R.string.wear_main_hint_waiting_sensors)
+                                },
+                                fontSize = dimens.captionTextSize,
+                                textAlign = TextAlign.Center
+                            )
+                        }
+
+                        // Settings — language picker + Force End live here now, off the main screen.
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.BottomCenter
                         ) {
                             Text(
-                                text = "♥",
-                                color = Color(0xFFEF5350),
-                                fontSize = 14.sp,
-                                modifier = Modifier.scale(if (heartRate > 0) heartScale else 1f)
+                                text = "⚙",
+                                color = Color.White.copy(alpha = 0.5f),
+                                fontSize = dimens.bodyTextSize,
+                                modifier = Modifier
+                                    .padding(bottom = 2.sdp)
+                                    .clickable { showSettings = true }
                             )
-                            Text(
-                                text = if (heartRate > 0f) "${heartRate.toInt()}" else "--",
-                                color = Color.White,
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text("BPM", color = Color(0xFF9E9E9E), fontSize = 9.sp)
                         }
-                    }
-
-                    // Odi centered (unchanged)
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center,
-                        modifier = Modifier.clickable {
-                            Log.d("MainActivity", "Odi clicked - forcing permission check")
-                            onOdiClick()
-                        }
-                    ) {
-                        OdiCharacter(
-                            state = when {
-                                heartRate > 120f -> OdiAnimationState.CONCERNED
-                                heartRate > 0f -> OdiAnimationState.IDLE
-                                else -> OdiAnimationState.THINKING
-                            }
-                        )
-                        Spacer(Modifier.height(8.dp))
-                        Text(
-                            text = if (isRunning) "Odi is watching" else "Hi, I'm Odi",
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                        Text(
-                            text = if (heartRate > 0) "Stay active!" else if (!isRunning) "Tap to Grant Permissions" else "Waiting for sensors...",
-                            style = MaterialTheme.typography.bodySmall,
-                            textAlign = TextAlign.Center
-                        )
-                    }
-
-                    // Force End — fully closes the watch app and stops the background service.
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.BottomCenter
-                    ) {
-                        Text(
-                            text = "⏻ Force End",
-                            color = Color(0xFFEF5350),
-                            fontSize = 11.sp,
-                            modifier = Modifier
-                                .padding(bottom = 2.dp)
-                                .clickable { onForceEnd() }
-                        )
                     }
                 }
             }

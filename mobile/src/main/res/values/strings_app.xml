@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Auto-generated English source strings for this screen area.
+  Phone app UI text.
+  ADDING A LANGUAGE: copy this file into res/values-<tag>/ and translate the values.
+-->
+<resources>
+    <!-- app_name already defined in strings.xml (mobile/src/main/res/values/strings.xml) -->
+    <!-- WearMessageSender.kt:118 -->
+    <string name="wear_error_intervention_send_failed">Failed to send intervention to any connected node</string>
+    <!-- WearMessageSender.kt:22 -->
+    <string name="wear_error_no_watch_found">No WearOS can be found to send the message to! Make sure one is connected to the device and Bluetooth + Internet is on!</string>
+    <!-- WearMessageSender.kt:189 -->
+    <string name="wear_error_ping_failed">Failed to ping any connected node</string>
+    <!-- WearMessageSender.kt:68 -->
+    <string name="wear_error_reach_watch">Failed to reach watch: %1$s</string>
+    <!-- WearMessageSender.kt:219 -->
+    <string name="wear_error_unknown_reason">unknown error</string>
+    <!-- WearMessageListener.kt:67 -->
+    <string name="wear_toast_reaction_suffix"> (%1$d ms)</string>
+    <!-- WearMessageListener.kt:67 -->
+    <string name="wear_toast_watch_response">Watch: %1$s</string>
+</resources>

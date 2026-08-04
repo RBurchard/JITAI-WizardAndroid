@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Auto-generated English source strings for this screen area.
+  Watch app UI text. Keep entries SHORT — see ui/layout/WearDimens.kt.
+  ADDING A LANGUAGE: copy this file into res/values-<tag>/ and translate the values.
+-->
+<resources>
+    <!-- app_name already defined in strings.xml (WatchDataService.kt:329 notification title reuses it) -->
+    <!-- MainComplicationService.kt:30 -->
+    <string name="complication_day_full_fri">Friday</string>
+    <!-- MainComplicationService.kt:26 -->
+    <string name="complication_day_full_mon">Monday</string>
+    <!-- MainComplicationService.kt:31 -->
+    <string name="complication_day_full_sat">Saturday</string>
+    <!-- MainComplicationService.kt:25 -->
+    <string name="complication_day_full_sun">Sunday</string>
+    <!-- MainComplicationService.kt:29 -->
+    <string name="complication_day_full_thu">Thursday</string>
+    <!-- MainComplicationService.kt:27 -->
+    <string name="complication_day_full_tue">Tuesday</string>
+    <!-- MainComplicationService.kt:28 -->
+    <string name="complication_day_full_wed">Wednesday</string>
+    <!-- MainComplicationService.kt:30 -->
+    <string name="complication_day_short_fri">Fri</string>
+    <!-- MainComplicationService.kt:26 -->
+    <string name="complication_day_short_mon">Mon</string>
+    <!-- MainComplicationService.kt:20 preview data reuses complication_day_short_mon / complication_day_full_mon above, not a separate resource -->
+    <!-- MainComplicationService.kt:31 -->
+    <string name="complication_day_short_sat">Sat</string>
+    <!-- MainComplicationService.kt:25 -->
+    <string name="complication_day_short_sun">Sun</string>
+    <!-- MainComplicationService.kt:29 -->
+    <string name="complication_day_short_thu">Thu</string>
+    <!-- MainComplicationService.kt:27 -->
+    <string name="complication_day_short_tue">Tue</string>
+    <!-- MainComplicationService.kt:28 -->
+    <string name="complication_day_short_wed">Wed</string>
+    <!-- WearMessageSender.kt:42 -->
+    <string name="error_send_failed">Connection to phone lost</string>
+    <!-- WearMessageListener.kt:109 -->
+    <string name="intervention_phone_task_message">Check your phone!</string>
+    <!-- WatchDataService.kt:320 -->
+    <string name="notif_channel_watch_data_name">Watch Data Collection</string>
+    <!-- WatchDataService.kt:330 -->
+    <string name="notif_watch_data_text">Collecting sensor data</string>
+    <!-- MainTileService.kt:50 -->
+    <string name="tile_main_placeholder_label">Tile</string>
+</resources>

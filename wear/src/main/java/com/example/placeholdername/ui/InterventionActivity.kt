@@ -12,6 +12,8 @@ import androidx.activity.compose.setContent
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -20,15 +22,16 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.wear.compose.material3.Button
 import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.Text
+import com.example.jitaicompanion.R
 import com.example.jitaicompanion.convention.Protocol
 import com.example.jitaicompanion.convention.models.GameType
 import com.example.jitaicompanion.convention.models.Intervention
@@ -38,6 +41,10 @@ import com.example.jitaicompanion.ui.games.LockPickingGameActivity
 import com.example.jitaicompanion.ui.games.SimonSaysGameActivity
 import com.example.jitaicompanion.ui.games.StandStillGameActivity
 import com.example.jitaicompanion.ui.games.TriviaGameActivity
+import com.example.jitaicompanion.ui.layout.ProvideWearDimens
+import com.example.jitaicompanion.ui.layout.sdp
+import com.example.jitaicompanion.ui.layout.ssp
+import com.example.jitaicompanion.ui.layout.wearDimens
 import kotlinx.coroutines.delay
 import kotlinx.serialization.json.Json
 
@@ -85,38 +92,40 @@ class InterventionActivity : ComponentActivity() {
         applyVibration(intervention.notification)
 
         setContent {
-            val sender = remember { WearMessageSender(this) }
+            ProvideWearDimens {
+                val sender = remember { WearMessageSender(this) }
 
-            // Called when the user positively acknowledges the intervention (OK / Yes / timer done).
-            // If a microgame is attached, launch it now — the text/vibration has already been shown.
-            // Otherwise just send the response and finish.
-            val onAccepted: (String) -> Unit = { response ->
-                if (intervention.gameType != null) {
-                    launchGame(jsonStr, intervention.gameType!!)
-                } else {
+                // Called when the user positively acknowledges the intervention (OK / Yes / timer done).
+                // If a microgame is attached, launch it now — the text/vibration has already been shown.
+                // Otherwise just send the response and finish.
+                val onAccepted: (String) -> Unit = { response ->
+                    if (intervention.gameType != null) {
+                        launchGame(jsonStr, intervention.gameType!!)
+                    } else {
+                        sender.sendResponse(response)
+                        finish()
+                    }
+                }
+
+                // Called when the user explicitly declines (Yes/No → "No").
+                // Never launches a game — always cancels the interaction cleanly.
+                val onDeclined: (String) -> Unit = { response ->
                     sender.sendResponse(response)
                     finish()
                 }
-            }
 
-            // Called when the user explicitly declines (Yes/No → "No").
-            // Never launches a game — always cancels the interaction cleanly.
-            val onDeclined: (String) -> Unit = { response ->
-                sender.sendResponse(response)
-                finish()
-            }
-
-            MaterialTheme {
-                // Global timeout: for Yes/No the user didn't respond → treat as a decline (no game).
-                // For all other types the notification period elapsed → proceed to game if attached.
-                LaunchedEffect(Unit) {
-                    delay(intervention.durationSeconds * 1000L)
-                    if (intervention.type == "Yes/No") onDeclined("timeout") else onAccepted("timeout")
-                }
-                when (intervention.type) {
-                    "Timer"  -> TimerScreen(intervention, onAccepted)
-                    "Yes/No" -> YesNoScreen(intervention, onAccepted, onDeclined)
-                    else     -> TextScreen(intervention, onAccepted)
+                MaterialTheme {
+                    // Global timeout: for Yes/No the user didn't respond → treat as a decline (no game).
+                    // For all other types the notification period elapsed → proceed to game if attached.
+                    LaunchedEffect(Unit) {
+                        delay(intervention.durationSeconds * 1000L)
+                        if (intervention.type == "Yes/No") onDeclined("timeout") else onAccepted("timeout")
+                    }
+                    when (intervention.type) {
+                        "Timer"  -> TimerScreen(intervention, onAccepted)
+                        "Yes/No" -> YesNoScreen(intervention, onAccepted, onDeclined)
+                        else     -> TextScreen(intervention, onAccepted)
+                    }
                 }
             }
         }
@@ -141,9 +150,9 @@ class InterventionActivity : ComponentActivity() {
 
     /** Fallback prompt shown when an intervention arrives with no message text. */
     private fun defaultMessageFor(type: String): String = when (type) {
-        "Yes/No" -> "Are you doing okay right now?"
-        "Timer"  -> "Take a short, calm break."
-        else     -> "Take a mindful moment — notice how you feel."
+        "Yes/No" -> getString(R.string.intervention_default_message_yes_no)
+        "Timer"  -> getString(R.string.intervention_default_message_timer)
+        else     -> getString(R.string.intervention_default_message_text)
     }
 
     private fun applyVibration(type: NotificationType) {
@@ -180,15 +189,25 @@ private fun TextScreen(
     intervention: Intervention,
     onAccepted: (String) -> Unit
 ) {
+    val dimens = wearDimens
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.verticalScroll(rememberScrollState())
+        ) {
             AutoResizeText(
                 text = intervention.message,
                 maxLines = 3,
-                modifier = Modifier.fillMaxWidth().padding(5.dp)
+                modifier = Modifier.fillMaxWidth().padding(dimens.horizontalPadding)
             )
-            Spacer(Modifier.height(16.dp))
-            val label = if (intervention.gameType != null) "Ready!" else "OK"
+            Spacer(Modifier.height(16.sdp))
+            // "Ready!" leads into a microgame; "OK" just dismisses. Payload sent to the phone
+            // ("Done") is unrelated to this label and must not be localized.
+            val label = if (intervention.gameType != null) {
+                stringResource(R.string.intervention_button_ready)
+            } else {
+                stringResource(R.string.intervention_button_ok)
+            }
             Button(onClick = { onAccepted("Done") }) { Text(label) }
         }
     }
@@ -200,22 +219,32 @@ private fun YesNoScreen(
     onAccepted: (String) -> Unit,
     onDeclined: (String) -> Unit
 ) {
+    val dimens = wearDimens
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.verticalScroll(rememberScrollState())
+        ) {
             AutoResizeText(
                 text = intervention.message,
                 maxLines = 3,
-                modifier = Modifier.fillMaxWidth().padding(5.dp)
+                modifier = Modifier.fillMaxWidth().padding(dimens.horizontalPadding)
             )
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(12.sdp))
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(dimens.itemSpacing)
             ) {
-                // "Yes" proceeds to the game (if any) or sends the response.
-                Button(onClick = { onAccepted("Yes") }) { Text("Yes") }
-                // "No" always cancels — the game (if any) is not launched.
-                Button(onClick = { onDeclined("No") }) { Text("No") }
+                // "Yes" proceeds to the game (if any) or sends the response. The "Yes" payload
+                // below is the response recorded as study data — it must stay literal English.
+                Button(onClick = { onAccepted("Yes") }, modifier = Modifier.weight(1f)) {
+                    Text(stringResource(R.string.intervention_button_yes))
+                }
+                // "No" always cancels — the game (if any) is not launched. Same rule: the "No"
+                // payload is study data and must stay literal English.
+                Button(onClick = { onDeclined("No") }, modifier = Modifier.weight(1f)) {
+                    Text(stringResource(R.string.intervention_button_no))
+                }
             }
         }
     }
@@ -243,7 +272,7 @@ private fun TimerScreen(
     CircularProgressWithCenter(
         progress = animatedProgress,
         text = intervention.message,
-        timerText = "$remaining s",
+        timerText = stringResource(R.string.intervention_timer_seconds_remaining, remaining),
         onOk = { onAccepted("Timer OK") }
     )
 }
@@ -252,24 +281,32 @@ private fun TimerScreen(
 
 @Composable
 fun CircularProgressWithCenter(progress: Float, text: String, timerText: String, onOk: () -> Unit) {
+    val dimens = wearDimens
     Box(modifier = Modifier.fillMaxSize()) {
         EdgeCircularProgress(progress = progress)
         Column(
-            modifier = Modifier.fillMaxSize().padding(28.dp),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(dimens.contentPadding)
+                .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            AutoResizeText(text = text, maxLines = 3, modifier = Modifier.fillMaxWidth().padding(5.dp))
-            Spacer(Modifier.height(4.dp))
-            Text(timerText)
-            Spacer(Modifier.height(8.dp))
-            Button(onClick = onOk) { Text("OK") }
+            AutoResizeText(
+                text = text,
+                maxLines = 3,
+                modifier = Modifier.fillMaxWidth().padding(dimens.horizontalPadding)
+            )
+            Spacer(Modifier.height(4.sdp))
+            Text(timerText, fontSize = dimens.bodyTextSize)
+            Spacer(Modifier.height(8.sdp))
+            Button(onClick = onOk) { Text(stringResource(R.string.intervention_button_ok)) }
         }
     }
 }
 
 @Composable
-fun EdgeCircularProgress(progress: Float, strokeWidth: Dp = 6.dp) {
+fun EdgeCircularProgress(progress: Float, strokeWidth: Dp = 6.sdp) {
     Canvas(modifier = Modifier.fillMaxSize()) {
         val strokePx = strokeWidth.toPx()
         val radius = size.minDimension / 2f - strokePx / 2f
@@ -297,8 +334,8 @@ private fun lerp(start: Float, end: Float, t: Float) = start + (end - start) * t
 fun AutoResizeText(
     text: String,
     modifier: Modifier = Modifier,
-    maxFontSize: TextUnit = 18.sp,
-    minFontSize: TextUnit = 4.sp,
+    maxFontSize: TextUnit = wearDimens.titleTextSize,
+    minFontSize: TextUnit = maxOf(wearDimens.captionTextSize.value, 10f).sp,
     maxLines: Int = 3
 ) {
     var fontSize by remember { mutableStateOf(maxFontSize) }

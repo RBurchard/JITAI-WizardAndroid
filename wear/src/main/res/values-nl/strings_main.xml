@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Auto-generated English source strings for this screen area.
+  Watch app UI text. Keep entries SHORT — see ui/layout/WearDimens.kt.
+  ADDING A LANGUAGE: copy this file into res/values-<tag>/ and translate the values.
+-->
+<resources>
+    <!-- app_name, complication_label, hello_world, tile_label already defined in strings.xml -->
+    <!-- InterventionActivity.kt:218 -->
+    <string name="intervention_button_no">Nee</string>
+    <!-- InterventionActivity.kt:191 -->
+    <string name="intervention_button_ok">OK</string>
+    <!-- InterventionActivity.kt:191 -->
+    <string name="intervention_button_ready">Klaar!</string>
+    <!-- InterventionActivity.kt:216 -->
+    <string name="intervention_button_yes">Ja</string>
+    <!-- InterventionActivity.kt:146 -->
+    <string name="intervention_default_message_text">Neem een moment voor jezelf — merk hoe je je voelt.</string>
+    <!-- InterventionActivity.kt:145 -->
+    <string name="intervention_default_message_timer">Neem een korte, rustige pauze.</string>
+    <!-- InterventionActivity.kt:144 -->
+    <string name="intervention_default_message_yes_no">Gaat het nu goed met je?</string>
+    <!-- InterventionActivity.kt:246 -->
+    <string name="intervention_timer_seconds_remaining">%1$d s</string>
+    <!-- PositiveFeedbackActivity.kt:65 -->
+    <string name="positive_feedback_odi_says">Odi zegt: %1$s</string>
+    <!-- PositiveFeedbackActivity.kt:27 -->
+    <string name="positive_feedback_praise_1">Je hebt weerstaan!</string>
+    <!-- PositiveFeedbackActivity.kt:28 -->
+    <string name="positive_feedback_praise_2">Uitstekende controle!</string>
+    <!-- PositiveFeedbackActivity.kt:29 -->
+    <string name="positive_feedback_praise_3">Wilskracht wint!</string>
+    <!-- PositiveFeedbackActivity.kt:30 -->
+    <string name="positive_feedback_praise_4">Sterk gedaan!</string>
+    <!-- PositiveFeedbackActivity.kt:31 -->
+    <string name="positive_feedback_praise_5">Ga zo door!</string>
+    <!-- PositiveFeedbackActivity.kt:32 -->
+    <string name="positive_feedback_praise_6">Goed gedaan!</string>
+    <!-- PositiveFeedbackActivity.kt:33 -->
+    <string name="positive_feedback_praise_7">Gelukt!</string>
+    <!-- Force End is now inside Settings (ui/settings/SettingsScreen.kt), see settings_force_end in strings_common.xml -->
+    <!-- MainActivity.kt:243 -->
+    <string name="wear_main_hint_active">Blijf actief!</string>
+    <!-- MainActivity.kt:243 -->
+    <string name="wear_main_hint_grant_permissions">Tik voor machtigingen</string>
+    <!-- MainActivity.kt:243 -->
+    <string name="wear_main_hint_waiting_sensors">Wachten op sensoren...</string>
+    <!-- MainActivity.kt:212 -->
+    <string name="wear_main_hr_no_value">--</string>
+    <!-- MainActivity.kt:239 -->
+    <string name="wear_main_status_greeting">Hoi, ik ben Odi</string>
+    <!-- MainActivity.kt:239 -->
+    <string name="wear_main_status_watching">Odi kijkt mee</string>
+    <!-- MainActivity.kt:217 -->
+    <string name="wear_main_unit_bpm">BPM</string>
+</resources>

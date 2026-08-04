@@ -6,6 +6,7 @@ import androidx.wear.watchface.complications.data.PlainComplicationText
 import androidx.wear.watchface.complications.data.ShortTextComplicationData
 import androidx.wear.watchface.complications.datasource.ComplicationRequest
 import androidx.wear.watchface.complications.datasource.SuspendingComplicationDataSourceService
+import com.example.jitaicompanion.R
 import java.util.Calendar
 
 /**
@@ -17,18 +18,42 @@ class MainComplicationService : SuspendingComplicationDataSourceService() {
         if (type != ComplicationType.SHORT_TEXT) {
             return null
         }
-        return createComplicationData("Mon", "Monday")
+        return createComplicationData(
+            getString(R.string.complication_day_short_mon),
+            getString(R.string.complication_day_full_mon)
+        )
     }
 
     override suspend fun onComplicationRequest(request: ComplicationRequest): ComplicationData {
         return when (Calendar.getInstance().get(Calendar.DAY_OF_WEEK)) {
-            Calendar.SUNDAY -> createComplicationData("Sun", "Sunday")
-            Calendar.MONDAY -> createComplicationData("Mon", "Monday")
-            Calendar.TUESDAY -> createComplicationData("Tue", "Tuesday")
-            Calendar.WEDNESDAY -> createComplicationData("Wed", "Wednesday")
-            Calendar.THURSDAY -> createComplicationData("Thu", "Thursday")
-            Calendar.FRIDAY -> createComplicationData("Fri", "Friday")
-            Calendar.SATURDAY -> createComplicationData("Sat", "Saturday")
+            Calendar.SUNDAY -> createComplicationData(
+                getString(R.string.complication_day_short_sun),
+                getString(R.string.complication_day_full_sun)
+            )
+            Calendar.MONDAY -> createComplicationData(
+                getString(R.string.complication_day_short_mon),
+                getString(R.string.complication_day_full_mon)
+            )
+            Calendar.TUESDAY -> createComplicationData(
+                getString(R.string.complication_day_short_tue),
+                getString(R.string.complication_day_full_tue)
+            )
+            Calendar.WEDNESDAY -> createComplicationData(
+                getString(R.string.complication_day_short_wed),
+                getString(R.string.complication_day_full_wed)
+            )
+            Calendar.THURSDAY -> createComplicationData(
+                getString(R.string.complication_day_short_thu),
+                getString(R.string.complication_day_full_thu)
+            )
+            Calendar.FRIDAY -> createComplicationData(
+                getString(R.string.complication_day_short_fri),
+                getString(R.string.complication_day_full_fri)
+            )
+            Calendar.SATURDAY -> createComplicationData(
+                getString(R.string.complication_day_short_sat),
+                getString(R.string.complication_day_full_sat)
+            )
             else -> throw IllegalArgumentException("too many days")
         }
     }

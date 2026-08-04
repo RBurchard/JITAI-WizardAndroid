@@ -1,28 +1,26 @@
 package com.BWPStudio.JITAIWizard.ui.odi
 
-object OdiDialogues {
-    val idle = listOf(
-        "Monitoring...", "Stay sharp!", "I'm watching...", "All clear.",
-        "Processing...", "You've got this.", "Looking good!", "Keeping an eye out."
-    )
-    val talking = listOf("Focus... you can do this!", "Check your phone.", "Task incoming.", "Hey, listen up!")
-    val thinking = listOf("Analyzing...", "Hmm...", "Computing...", "One moment...", "Crunching the data...")
-    val celebrating = listOf("You resisted!", "Excellent control!", "Mind over matter!", "Strong work!", "Outstanding!")
-    val happy = listOf("Nice and steady.", "Feeling good!", "That's the spirit.", "Great pace!")
-    val surprised = listOf("Oh!", "Whoa!", "Heads up!", "Did you feel that?")
-    val sleeping = listOf("Zzz...", "Resting up...", "Wake me if you need me.", "Just a little nap.")
-    val concerned = listOf("Easy now...", "Let's slow down.", "Take a breath.", "Everything okay?")
+import android.content.Context
+import com.BWPStudio.JITAIWizard.R
 
-    fun linesFor(state: OdiAnimationState): List<String> = when (state) {
-        OdiAnimationState.IDLE -> idle
-        OdiAnimationState.TALKING -> talking
-        OdiAnimationState.THINKING -> thinking
-        OdiAnimationState.CELEBRATING -> celebrating
-        OdiAnimationState.HAPPY -> happy
-        OdiAnimationState.SURPRISED -> surprised
-        OdiAnimationState.SLEEPING -> sleeping
-        OdiAnimationState.CONCERNED -> concerned
+/**
+ * ODI's mood-based dialogue lines, sourced from `<string-array>` resources so they can
+ * be localized. This is a plain Kotlin object with no Context of its own, so callers
+ * must supply one (typically `LocalContext.current` from a composable).
+ */
+object OdiDialogues {
+
+    private fun arrayResFor(state: OdiAnimationState): Int = when (state) {
+        OdiAnimationState.IDLE -> R.array.odi_lines_idle
+        OdiAnimationState.TALKING -> R.array.odi_lines_talking
+        OdiAnimationState.THINKING -> R.array.odi_lines_thinking
+        OdiAnimationState.CELEBRATING -> R.array.odi_lines_celebrating
+        OdiAnimationState.HAPPY -> R.array.odi_lines_happy
+        OdiAnimationState.SURPRISED -> R.array.odi_lines_surprised
+        OdiAnimationState.SLEEPING -> R.array.odi_lines_sleeping
+        OdiAnimationState.CONCERNED -> R.array.odi_lines_concerned
     }
 
-    fun forState(state: OdiAnimationState) = linesFor(state).random()
+    fun forState(context: Context, state: OdiAnimationState): String =
+        context.resources.getStringArray(arrayResFor(state)).random()
 }

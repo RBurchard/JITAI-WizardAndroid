@@ -1,0 +1,228 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Auto-generated English source strings for this screen area.
+  Phone app UI text.
+  ADDING A LANGUAGE: copy this file into res/values-<tag>/ and translate the values.
+-->
+<resources>
+    <!-- ExperimentScreen.kt:288 -->
+    <string name="common_edit">Bearbeiten</string>
+    <!-- ControlScreen.kt:64 -->
+    <string name="control_button_perma_both">Dauer Beide</string>
+    <!-- ControlScreen.kt:63 -->
+    <string name="control_button_perma_sound">Dauer Sound</string>
+    <!-- ControlScreen.kt:62 -->
+    <string name="control_button_perma_vib">Dauer Vib</string>
+    <!-- ControlScreen.kt:55 -->
+    <string name="control_button_sound_long">Sound Lang</string>
+    <!-- ControlScreen.kt:54 -->
+    <string name="control_button_sound_short">Sound Kurz</string>
+    <!-- ControlScreen.kt:51 -->
+    <string name="control_button_vib_long">Vib Lang</string>
+    <!-- ControlScreen.kt:50 -->
+    <string name="control_button_vib_short">Vib Kurz</string>
+    <!-- ControlScreen.kt:59 -->
+    <string name="control_button_vib_sound_long">Vib+Sound Lang</string>
+    <!-- ControlScreen.kt:58 -->
+    <string name="control_button_vib_sound_short">Vib+Sound Kurz</string>
+    <!-- ControlScreen.kt:31 -->
+    <string name="control_default_message">Stopp!</string>
+    <!-- ControlScreen.kt:73 -->
+    <string name="control_field_intervention_type">Interventionstyp</string>
+    <!-- ControlScreen.kt:80 -->
+    <string name="control_label_duration_seconds">Dauer (Sekunden):</string>
+    <!-- ControlScreen.kt:68 -->
+    <string name="control_label_message">Nachricht:</string>
+    <!-- ControlScreen.kt:71 -->
+    <string name="control_placeholder_message">Nachricht eingeben</string>
+    <!-- ControlScreen.kt:45 -->
+    <string name="control_title">Interventionen senden</string>
+    <!-- DebugViewScreen.kt:68 -->
+    <string name="debugview_banner_debug_mode">DEBUG-MODUS</string>
+    <!-- DebugViewScreen.kt:72 -->
+    <string name="debugview_button_force_end">⏻ Beenden erzwingen</string>
+    <!-- DebugViewScreen.kt:41 -->
+    <string name="debugview_tab_control">Steuerung</string>
+    <!-- DebugViewScreen.kt:41 -->
+    <string name="debugview_tab_experiment">Experiment</string>
+    <!-- DebugViewScreen.kt:47 -->
+    <string name="debugview_wear_error_title">WearOS-Fehler</string>
+    <!-- DebugViewScreen.kt:195 -->
+    <string name="engine_chip_engine">Engine: %1$s</string>
+    <!-- DebugViewScreen.kt:199 -->
+    <string name="engine_chip_event">Event: %1$s</string>
+    <!-- DebugViewScreen.kt:197 -->
+    <string name="engine_chip_mode">Modus: %1$s</string>
+    <!-- DebugViewScreen.kt:202 -->
+    <string name="engine_chip_run">Lauf: %1$s</string>
+    <!-- ExperimentScreen.kt:611 -->
+    <string name="event_editor_add_intervention">Intervention hinzufügen</string>
+    <!-- ExperimentScreen.kt:599 -->
+    <string name="event_editor_field_duration_seconds">Dauer (s)</string>
+    <!-- ExperimentScreen.kt:598 -->
+    <string name="event_editor_field_name">Name</string>
+    <!-- ExperimentScreen.kt:666 -->
+    <string name="event_editor_remove_intervention">Intervention entfernen</string>
+    <!-- ExperimentScreen.kt:596 -->
+    <string name="event_editor_title">Event bearbeiten</string>
+    <!-- ExperimentScreen.kt:218 -->
+    <string name="experiment_button_auto">Auto</string>
+    <!-- ExperimentScreen.kt:181 -->
+    <string name="experiment_button_load">Laden</string>
+    <!-- ExperimentScreen.kt:222 -->
+    <string name="experiment_button_note">📝 Notiz</string>
+    <!-- ExperimentScreen.kt:202 -->
+    <string name="experiment_button_start">Start</string>
+    <!-- ExperimentScreen.kt:202 -->
+    <string name="experiment_button_stop">Stopp</string>
+    <!-- ExperimentScreen.kt:263 -->
+    <string name="experiment_cd_reorder">Neu anordnen</string>
+    <!-- ExperimentScreen.kt:284 -->
+    <string name="experiment_event_duration">Dauer: %1$d s</string>
+    <!-- ExperimentScreen.kt:277 -->
+    <string name="experiment_event_intervention_summary">%1$s · %2$s  %3$ds</string>
+    <!-- ExperimentScreen.kt:447 -->
+    <string name="experiment_run_elapsed_seconds">%1$ds</string>
+    <!-- ExperimentScreen.kt:476 -->
+    <string name="experiment_run_next">Weiter</string>
+    <!-- ExperimentScreen.kt:436 -->
+    <string name="experiment_run_previous">Vorherige</string>
+    <!-- ExperimentScreen.kt:442 -->
+    <string name="experiment_run_restart">Neu starten</string>
+    <!-- ExperimentScreen.kt:459 -->
+    <string name="experiment_run_send_cd">Senden</string>
+    <!-- ExperimentScreen.kt:173 -->
+    <string name="experiment_settings">Einstellungen</string>
+    <!-- ExperimentScreen.kt:178 -->
+    <string name="experiment_status_no_logs">Keine Logs</string>
+    <!-- ExperimentScreen.kt:178 -->
+    <string name="experiment_status_saving_logs">Logs werden gespeichert</string>
+    <!-- ExperimentScreen.kt:432 -->
+    <string name="experiment_toast_already_first_event">Bereits beim ersten Event!</string>
+    <!-- ExperimentScreen.kt:217 -->
+    <string name="experiment_toast_auto_run_started">Automatischer Lauf gestartet</string>
+    <!-- ExperimentScreen.kt:152 -->
+    <string name="experiment_toast_csv_saved">CSV gespeichert: %1$s</string>
+    <!-- ExperimentScreen.kt:362 -->
+    <string name="experiment_toast_export_failed">Export fehlgeschlagen – Speicher prüfen</string>
+    <!-- ExperimentScreen.kt:360 -->
+    <string name="experiment_toast_exported_to">Exportiert nach %1$s</string>
+    <!-- ExperimentScreen.kt:688 -->
+    <string name="experiment_toast_fill_all_fields">Bitte alle Felder ausfüllen!</string>
+    <!-- ExperimentScreen.kt:470 -->
+    <string name="experiment_toast_finished">Fertig!</string>
+    <!-- ExperimentScreen.kt:118 -->
+    <string name="experiment_toast_import_failed">Import fehlgeschlagen: keine gültige Experimentdatei</string>
+    <!-- ExperimentScreen.kt:116 -->
+    <string name="experiment_toast_import_success">\"%1$s\" importiert</string>
+    <!-- ExperimentScreen.kt:383 -->
+    <string name="experiment_toast_load_failed">\"%1$s\" konnte nicht geladen werden</string>
+    <!-- ExperimentScreen.kt:192 -->
+    <string name="experiment_toast_no_events">Keine Events!</string>
+    <!-- ExperimentScreen.kt:355 -->
+    <string name="experiment_toast_no_events_to_export">Keine Events zum Exportieren!</string>
+    <!-- ExperimentScreen.kt:342 -->
+    <string name="experiment_toast_no_events_to_save">Keine Events zum Speichern!</string>
+    <!-- ExperimentScreen.kt:329 -->
+    <string name="experiment_toast_note_recorded">Notiz gespeichert</string>
+    <!-- ExperimentScreen.kt:389 -->
+    <string name="experiment_toast_schedule_loaded">Zeitplan \"%1$s\" geladen</string>
+    <!-- ExperimentScreen.kt:349 -->
+    <string name="experiment_toast_schedule_saved">Zeitplan \"%1$s\" gespeichert</string>
+    <!-- ControlScreen.kt:77 -->
+    <string name="game_lock_picking">Schlossknacken</string>
+    <!-- ControlScreen.kt:77 -->
+    <string name="game_simon_says">Simon sagt</string>
+    <!-- ControlScreen.kt:77 -->
+    <string name="game_stand_still">Stillstehen</string>
+    <!-- ControlScreen.kt:77 -->
+    <string name="game_trivia">Quiz</string>
+    <!-- ExperimentScreen.kt:624 -->
+    <string name="intervention_field_message">Nachricht</string>
+    <!-- ExperimentScreen.kt:634 -->
+    <string name="intervention_field_microgame">Minispiel</string>
+    <!-- ExperimentScreen.kt:619 -->
+    <string name="intervention_field_notify">Benachrichtigen</string>
+    <!-- ExperimentScreen.kt:651 -->
+    <string name="intervention_field_phone_task">Handy-Aufgabe</string>
+    <!-- ExperimentScreen.kt:616 -->
+    <string name="intervention_field_type">Typ</string>
+    <!-- ExperimentScreen.kt:460 -->
+    <string name="intervention_label">Intervention</string>
+    <!-- Wire value "Text" (Intervention.type) — display-only label for the Type dropdown; the
+         stored/compared value stays the literal English wire string. Added during localization,
+         no source-line citation (not part of the original mechanical audit). -->
+    <string name="intervention_type_text_display">Text</string>
+    <!-- Wire value "Timer" (Intervention.type) — display-only label, see intervention_type_text_display. -->
+    <string name="intervention_type_timer_display">Timer</string>
+    <!-- Wire value "Yes/No" (Intervention.type) — display-only label, see intervention_type_text_display. -->
+    <string name="intervention_type_yesno_display">Ja/Nein</string>
+    <!-- ExperimentScreen.kt:630 -->
+    <string name="intervention_microgame_section">Minispiel (optional)</string>
+    <!-- ExperimentScreen.kt:647 -->
+    <string name="intervention_or_phone_task">— oder Handy-Aufgabe —</string>
+    <!-- ExperimentScreen.kt:818 -->
+    <string name="load_schedule_empty">Noch keine gespeicherten Zeitpläne.</string>
+    <!-- ExperimentScreen.kt:814 -->
+    <string name="load_schedule_import_button">Vom Handy importieren…</string>
+    <!-- ExperimentScreen.kt:809 -->
+    <string name="load_schedule_title">Zeitplan laden</string>
+    <!-- ExperimentScreen.kt:565 -->
+    <string name="note_dialog_field_label">Was ist passiert?</string>
+    <!-- ExperimentScreen.kt:566 -->
+    <string name="note_dialog_placeholder">z. B. Teilnehmer fühlte sich unwohl</string>
+    <!-- ExperimentScreen.kt:561 -->
+    <string name="note_dialog_title">Sitzungsnotiz</string>
+    <!-- ExperimentScreen.kt:786 -->
+    <string name="save_schedule_export_button">In Datei exportieren (Downloads)</string>
+    <!-- ExperimentScreen.kt:765 -->
+    <string name="save_schedule_field_name">Name des Zeitplans</string>
+    <!-- ExperimentScreen.kt:770 -->
+    <string name="save_schedule_overwrite_existing">Vorhandenen überschreiben:</string>
+    <!-- ExperimentScreen.kt:760 -->
+    <string name="save_schedule_title">Zeitplan speichern</string>
+    <!-- ExperimentScreen.kt:544 -->
+    <string name="settings_checkbox_save_logs">Logs speichern</string>
+    <!-- ExperimentScreen.kt:538 -->
+    <string name="settings_field_experiment_name">Experimentname</string>
+    <!-- ExperimentScreen.kt:540 -->
+    <string name="settings_field_notes">Experimentnotizen / Ablauf</string>
+    <!-- ExperimentScreen.kt:539 -->
+    <string name="settings_field_participant_id">Teilnehmer-ID</string>
+    <!-- ExperimentScreen.kt:728 -->
+    <string name="trigger_kind_heart_rate">HF %1$s %2$d</string>
+    <!-- ExperimentScreen.kt:720 -->
+    <string name="trigger_kind_manual">Manuell</string>
+    <!-- ExperimentScreen.kt:721 -->
+    <string name="trigger_kind_rapid">Schnell (%1$sg)</string>
+    <!-- ExperimentScreen.kt:724 -->
+    <string name="trigger_kind_repeat">Wiederholung %1$s–%2$s Hz</string>
+    <!-- DebugViewScreen.kt:229 -->
+    <string name="trigger_quickfire_fire_button">%1$s auslösen</string>
+    <!-- DebugViewScreen.kt:223 -->
+    <string name="trigger_quickfire_label">Trigger:</string>
+    <!-- ExperimentScreen.kt:712 -->
+    <string name="trigger_summary_title">Trigger</string>
+    <!-- DebugViewScreen.kt:170 -->
+    <string name="watchbar_button_close_watch">Uhr schließen</string>
+    <!-- DebugViewScreen.kt:164 -->
+    <string name="watchbar_button_ping">Ping</string>
+    <!-- DebugViewScreen.kt:141 -->
+    <string name="watchbar_heart_rate">%1$d BPM</string>
+    <!-- DebugViewScreen.kt:147 -->
+    <string name="watchbar_last_action">Zuletzt: %1$s</string>
+    <!-- DebugViewScreen.kt:143 -->
+    <string name="watchbar_no_hr_signal">Kein HF-Signal</string>
+    <!-- DebugViewScreen.kt:157 -->
+    <string name="watchbar_ping_failed">Ping fehlgeschlagen</string>
+    <!-- DebugViewScreen.kt:155 -->
+    <string name="watchbar_ping_in_progress">pingt…</string>
+    <!-- DebugViewScreen.kt:159 -->
+    <string name="watchbar_ping_no_reply">keine Antwort</string>
+    <!-- DebugViewScreen.kt:124 -->
+    <string name="watchbar_status_checking">Uhr: wird geprüft…</string>
+    <!-- DebugViewScreen.kt:126 -->
+    <string name="watchbar_status_connected">Uhr: %1$s</string>
+    <!-- DebugViewScreen.kt:125 -->
+    <string name="watchbar_status_not_reachable">Uhr: NICHT erreichbar (App nicht gefunden)</string>
+</resources>

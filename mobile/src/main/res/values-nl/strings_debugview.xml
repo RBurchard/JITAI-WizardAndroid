@@ -1,0 +1,228 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Auto-generated English source strings for this screen area.
+  Phone app UI text.
+  ADDING A LANGUAGE: copy this file into res/values-<tag>/ and translate the values.
+-->
+<resources>
+    <!-- ExperimentScreen.kt:288 -->
+    <string name="common_edit">Bewerken</string>
+    <!-- ControlScreen.kt:64 -->
+    <string name="control_button_perma_both">Perma Beide</string>
+    <!-- ControlScreen.kt:63 -->
+    <string name="control_button_perma_sound">Perma Geluid</string>
+    <!-- ControlScreen.kt:62 -->
+    <string name="control_button_perma_vib">Perma Tril</string>
+    <!-- ControlScreen.kt:55 -->
+    <string name="control_button_sound_long">Geluid Lang</string>
+    <!-- ControlScreen.kt:54 -->
+    <string name="control_button_sound_short">Geluid Kort</string>
+    <!-- ControlScreen.kt:51 -->
+    <string name="control_button_vib_long">Tril Lang</string>
+    <!-- ControlScreen.kt:50 -->
+    <string name="control_button_vib_short">Tril Kort</string>
+    <!-- ControlScreen.kt:59 -->
+    <string name="control_button_vib_sound_long">Tril+Geluid Lang</string>
+    <!-- ControlScreen.kt:58 -->
+    <string name="control_button_vib_sound_short">Tril+Geluid Kort</string>
+    <!-- ControlScreen.kt:31 -->
+    <string name="control_default_message">Stop!</string>
+    <!-- ControlScreen.kt:73 -->
+    <string name="control_field_intervention_type">Interventietype</string>
+    <!-- ControlScreen.kt:80 -->
+    <string name="control_label_duration_seconds">Duur (seconden):</string>
+    <!-- ControlScreen.kt:68 -->
+    <string name="control_label_message">Bericht:</string>
+    <!-- ControlScreen.kt:71 -->
+    <string name="control_placeholder_message">Voer bericht in</string>
+    <!-- ControlScreen.kt:45 -->
+    <string name="control_title">Interventies versturen</string>
+    <!-- DebugViewScreen.kt:68 -->
+    <string name="debugview_banner_debug_mode">DEBUGMODUS</string>
+    <!-- DebugViewScreen.kt:72 -->
+    <string name="debugview_button_force_end">⏻ Forceer einde</string>
+    <!-- DebugViewScreen.kt:41 -->
+    <string name="debugview_tab_control">Besturing</string>
+    <!-- DebugViewScreen.kt:41 -->
+    <string name="debugview_tab_experiment">Experiment</string>
+    <!-- DebugViewScreen.kt:47 -->
+    <string name="debugview_wear_error_title">WearOS-fout</string>
+    <!-- DebugViewScreen.kt:195 -->
+    <string name="engine_chip_engine">Engine: %1$s</string>
+    <!-- DebugViewScreen.kt:199 -->
+    <string name="engine_chip_event">Gebeurtenis: %1$s</string>
+    <!-- DebugViewScreen.kt:197 -->
+    <string name="engine_chip_mode">Modus: %1$s</string>
+    <!-- DebugViewScreen.kt:202 -->
+    <string name="engine_chip_run">Run: %1$s</string>
+    <!-- ExperimentScreen.kt:611 -->
+    <string name="event_editor_add_intervention">Interventie toevoegen</string>
+    <!-- ExperimentScreen.kt:599 -->
+    <string name="event_editor_field_duration_seconds">Duur (s)</string>
+    <!-- ExperimentScreen.kt:598 -->
+    <string name="event_editor_field_name">Naam</string>
+    <!-- ExperimentScreen.kt:666 -->
+    <string name="event_editor_remove_intervention">Interventie verwijderen</string>
+    <!-- ExperimentScreen.kt:596 -->
+    <string name="event_editor_title">Gebeurtenis bewerken</string>
+    <!-- ExperimentScreen.kt:218 -->
+    <string name="experiment_button_auto">Auto</string>
+    <!-- ExperimentScreen.kt:181 -->
+    <string name="experiment_button_load">Laden</string>
+    <!-- ExperimentScreen.kt:222 -->
+    <string name="experiment_button_note">📝 Notitie</string>
+    <!-- ExperimentScreen.kt:202 -->
+    <string name="experiment_button_start">Start</string>
+    <!-- ExperimentScreen.kt:202 -->
+    <string name="experiment_button_stop">Stop</string>
+    <!-- ExperimentScreen.kt:263 -->
+    <string name="experiment_cd_reorder">Herschikken</string>
+    <!-- ExperimentScreen.kt:284 -->
+    <string name="experiment_event_duration">Duur: %1$d s</string>
+    <!-- ExperimentScreen.kt:277 -->
+    <string name="experiment_event_intervention_summary">%1$s · %2$s  %3$ds</string>
+    <!-- ExperimentScreen.kt:447 -->
+    <string name="experiment_run_elapsed_seconds">%1$ds</string>
+    <!-- ExperimentScreen.kt:476 -->
+    <string name="experiment_run_next">Volgende</string>
+    <!-- ExperimentScreen.kt:436 -->
+    <string name="experiment_run_previous">Vorige</string>
+    <!-- ExperimentScreen.kt:442 -->
+    <string name="experiment_run_restart">Herstart</string>
+    <!-- ExperimentScreen.kt:459 -->
+    <string name="experiment_run_send_cd">Verzenden</string>
+    <!-- ExperimentScreen.kt:173 -->
+    <string name="experiment_settings">Instellingen</string>
+    <!-- ExperimentScreen.kt:178 -->
+    <string name="experiment_status_no_logs">Geen logs</string>
+    <!-- ExperimentScreen.kt:178 -->
+    <string name="experiment_status_saving_logs">Logs opslaan</string>
+    <!-- ExperimentScreen.kt:432 -->
+    <string name="experiment_toast_already_first_event">Al bij de eerste gebeurtenis!</string>
+    <!-- ExperimentScreen.kt:217 -->
+    <string name="experiment_toast_auto_run_started">Auto-run gestart</string>
+    <!-- ExperimentScreen.kt:152 -->
+    <string name="experiment_toast_csv_saved">CSV opgeslagen: %1$s</string>
+    <!-- ExperimentScreen.kt:362 -->
+    <string name="experiment_toast_export_failed">Exporteren mislukt - controleer opslag</string>
+    <!-- ExperimentScreen.kt:360 -->
+    <string name="experiment_toast_exported_to">Geëxporteerd naar %1$s</string>
+    <!-- ExperimentScreen.kt:688 -->
+    <string name="experiment_toast_fill_all_fields">Vul alle velden in!</string>
+    <!-- ExperimentScreen.kt:470 -->
+    <string name="experiment_toast_finished">Klaar!</string>
+    <!-- ExperimentScreen.kt:118 -->
+    <string name="experiment_toast_import_failed">Importeren mislukt: geen geldig experimentbestand</string>
+    <!-- ExperimentScreen.kt:116 -->
+    <string name="experiment_toast_import_success">\"%1$s\" geïmporteerd</string>
+    <!-- ExperimentScreen.kt:383 -->
+    <string name="experiment_toast_load_failed">Kon \"%1$s\" niet laden</string>
+    <!-- ExperimentScreen.kt:192 -->
+    <string name="experiment_toast_no_events">Geen gebeurtenissen!</string>
+    <!-- ExperimentScreen.kt:355 -->
+    <string name="experiment_toast_no_events_to_export">Geen gebeurtenissen om te exporteren!</string>
+    <!-- ExperimentScreen.kt:342 -->
+    <string name="experiment_toast_no_events_to_save">Geen gebeurtenissen om op te slaan!</string>
+    <!-- ExperimentScreen.kt:329 -->
+    <string name="experiment_toast_note_recorded">Notitie opgeslagen</string>
+    <!-- ExperimentScreen.kt:389 -->
+    <string name="experiment_toast_schedule_loaded">Schema \"%1$s\" geladen</string>
+    <!-- ExperimentScreen.kt:349 -->
+    <string name="experiment_toast_schedule_saved">Schema \"%1$s\" opgeslagen</string>
+    <!-- ControlScreen.kt:77 -->
+    <string name="game_lock_picking">Slot Kraken</string>
+    <!-- ControlScreen.kt:77 -->
+    <string name="game_simon_says">Simon Zegt</string>
+    <!-- ControlScreen.kt:77 -->
+    <string name="game_stand_still">Stilstaan</string>
+    <!-- ControlScreen.kt:77 -->
+    <string name="game_trivia">Trivia</string>
+    <!-- ExperimentScreen.kt:624 -->
+    <string name="intervention_field_message">Bericht</string>
+    <!-- ExperimentScreen.kt:634 -->
+    <string name="intervention_field_microgame">Microgame</string>
+    <!-- ExperimentScreen.kt:619 -->
+    <string name="intervention_field_notify">Melden</string>
+    <!-- ExperimentScreen.kt:651 -->
+    <string name="intervention_field_phone_task">Telefoontaak</string>
+    <!-- ExperimentScreen.kt:616 -->
+    <string name="intervention_field_type">Type</string>
+    <!-- ExperimentScreen.kt:460 -->
+    <string name="intervention_label">Interventie</string>
+    <!-- Wire value "Text" (Intervention.type) — display-only label for the Type dropdown; the
+         stored/compared value stays the literal English wire string. Added during localization,
+         no source-line citation (not part of the original mechanical audit). -->
+    <string name="intervention_type_text_display">Tekst</string>
+    <!-- Wire value "Timer" (Intervention.type) — display-only label, see intervention_type_text_display. -->
+    <string name="intervention_type_timer_display">Timer</string>
+    <!-- Wire value "Yes/No" (Intervention.type) — display-only label, see intervention_type_text_display. -->
+    <string name="intervention_type_yesno_display">Ja/Nee</string>
+    <!-- ExperimentScreen.kt:630 -->
+    <string name="intervention_microgame_section">Microgame (optioneel)</string>
+    <!-- ExperimentScreen.kt:647 -->
+    <string name="intervention_or_phone_task">— of Telefoontaak —</string>
+    <!-- ExperimentScreen.kt:818 -->
+    <string name="load_schedule_empty">Nog geen opgeslagen schema\'s.</string>
+    <!-- ExperimentScreen.kt:814 -->
+    <string name="load_schedule_import_button">Importeren vanaf telefoon…</string>
+    <!-- ExperimentScreen.kt:809 -->
+    <string name="load_schedule_title">Schema laden</string>
+    <!-- ExperimentScreen.kt:565 -->
+    <string name="note_dialog_field_label">Wat is er gebeurd?</string>
+    <!-- ExperimentScreen.kt:566 -->
+    <string name="note_dialog_placeholder">bijv. Deelnemer voelde zich ongemakkelijk</string>
+    <!-- ExperimentScreen.kt:561 -->
+    <string name="note_dialog_title">Sessienotitie</string>
+    <!-- ExperimentScreen.kt:786 -->
+    <string name="save_schedule_export_button">Exporteren naar bestand (Downloads)</string>
+    <!-- ExperimentScreen.kt:765 -->
+    <string name="save_schedule_field_name">Schemanaam</string>
+    <!-- ExperimentScreen.kt:770 -->
+    <string name="save_schedule_overwrite_existing">Bestaande overschrijven:</string>
+    <!-- ExperimentScreen.kt:760 -->
+    <string name="save_schedule_title">Schema opslaan</string>
+    <!-- ExperimentScreen.kt:544 -->
+    <string name="settings_checkbox_save_logs">Logs opslaan</string>
+    <!-- ExperimentScreen.kt:538 -->
+    <string name="settings_field_experiment_name">Experimentnaam</string>
+    <!-- ExperimentScreen.kt:540 -->
+    <string name="settings_field_notes">Experimentnotities / Draaiboek</string>
+    <!-- ExperimentScreen.kt:539 -->
+    <string name="settings_field_participant_id">Deelnemer-ID</string>
+    <!-- ExperimentScreen.kt:728 -->
+    <string name="trigger_kind_heart_rate">HR %1$s %2$d</string>
+    <!-- ExperimentScreen.kt:720 -->
+    <string name="trigger_kind_manual">Handmatig</string>
+    <!-- ExperimentScreen.kt:721 -->
+    <string name="trigger_kind_rapid">Snel (%1$sg)</string>
+    <!-- ExperimentScreen.kt:724 -->
+    <string name="trigger_kind_repeat">Herhaal %1$s–%2$s Hz</string>
+    <!-- DebugViewScreen.kt:229 -->
+    <string name="trigger_quickfire_fire_button">Vuur %1$s</string>
+    <!-- DebugViewScreen.kt:223 -->
+    <string name="trigger_quickfire_label">Triggers:</string>
+    <!-- ExperimentScreen.kt:712 -->
+    <string name="trigger_summary_title">Triggers</string>
+    <!-- DebugViewScreen.kt:170 -->
+    <string name="watchbar_button_close_watch">Horloge sluiten</string>
+    <!-- DebugViewScreen.kt:164 -->
+    <string name="watchbar_button_ping">Ping</string>
+    <!-- DebugViewScreen.kt:141 -->
+    <string name="watchbar_heart_rate">%1$d BPM</string>
+    <!-- DebugViewScreen.kt:147 -->
+    <string name="watchbar_last_action">Laatste: %1$s</string>
+    <!-- DebugViewScreen.kt:143 -->
+    <string name="watchbar_no_hr_signal">Geen HR-signaal</string>
+    <!-- DebugViewScreen.kt:157 -->
+    <string name="watchbar_ping_failed">ping mislukt</string>
+    <!-- DebugViewScreen.kt:155 -->
+    <string name="watchbar_ping_in_progress">bezig met pingen…</string>
+    <!-- DebugViewScreen.kt:159 -->
+    <string name="watchbar_ping_no_reply">geen reactie</string>
+    <!-- DebugViewScreen.kt:124 -->
+    <string name="watchbar_status_checking">Horloge: controleren…</string>
+    <!-- DebugViewScreen.kt:126 -->
+    <string name="watchbar_status_connected">Horloge: %1$s</string>
+    <!-- DebugViewScreen.kt:125 -->
+    <string name="watchbar_status_not_reachable">Horloge: NIET bereikbaar (app niet gevonden)</string>
+</resources>

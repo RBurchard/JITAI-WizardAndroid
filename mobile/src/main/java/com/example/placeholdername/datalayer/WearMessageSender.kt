@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Log
 import android.widget.Toast
 import com.BWPStudio.JITAIWizard.JITAIWizardApp
+import com.BWPStudio.JITAIWizard.R
 import com.example.jitaicompanion.convention.Protocol
 import com.google.android.gms.wearable.CapabilityClient
 import com.google.android.gms.wearable.MessageClient
@@ -19,13 +20,13 @@ class WearMessageSender(private val context: Context) {
 
     companion object {
         private const val TAG = "WearMessageSender"
-        private const val NO_WEAR_MESSAGE = "No WearOS can be found to send the message to! Make sure one is connected to the device and Bluetooth + Internet is on!"
     }
 
     private val messageClient: MessageClient = Wearable.getMessageClient(context)
     private val nodeClient = Wearable.getNodeClient(context)
     private val capabilityClient = Wearable.getCapabilityClient(context)
     private val syncLogger = (context.applicationContext as? JITAIWizardApp)?.wearSyncLogger
+    private val noWearMessage: String by lazy { context.getString(R.string.wear_error_no_watch_found) }
 
     private suspend fun resolveNodes(): List<Node> {
         // Try capability-based discovery first — more reliable on Wear OS 4/5 because
@@ -65,7 +66,7 @@ class WearMessageSender(private val context: Context) {
                     payloadBytes = payload.size,
                     details = "resolve_node_failed: ${e.message}"
                 )
-                reportError(buildFailureMessage("Failed to reach watch", e), onError)
+                reportError(buildFailureMessage(e), onError)
                 return@launch
             }
 
@@ -77,7 +78,7 @@ class WearMessageSender(private val context: Context) {
                     payloadBytes = payload.size,
                     details = "no_connected_node"
                 )
-                reportError(NO_WEAR_MESSAGE, onError)
+                reportError(noWearMessage, onError)
                 return@launch
             }
 
@@ -115,7 +116,7 @@ class WearMessageSender(private val context: Context) {
             }
 
             if (failures == nodes.size) {
-                reportError("Failed to send intervention to any connected node", onError)
+                reportError(context.getString(R.string.wear_error_intervention_send_failed), onError)
             } else {
                 Log.d(TAG, "Intervention sent to ${nodes.size - failures}/${nodes.size} nodes")
             }
@@ -136,7 +137,7 @@ class WearMessageSender(private val context: Context) {
                     payloadBytes = payload.size,
                     details = "resolve_node_failed: ${e.message}"
                 )
-                reportError(buildFailureMessage("Failed to reach watch", e), onError)
+                reportError(buildFailureMessage(e), onError)
                 return@launch
             }
 
@@ -148,7 +149,7 @@ class WearMessageSender(private val context: Context) {
                     payloadBytes = payload.size,
                     details = "no_connected_node"
                 )
-                reportError(NO_WEAR_MESSAGE, onError)
+                reportError(noWearMessage, onError)
                 return@launch
             }
 
@@ -186,7 +187,7 @@ class WearMessageSender(private val context: Context) {
             }
 
             if (failures == nodes.size) {
-                reportError("Failed to ping any connected node", onError)
+                reportError(context.getString(R.string.wear_error_ping_failed), onError)
             } else {
                 Log.d(TAG, "Ping sent to ${nodes.size - failures}/${nodes.size} nodes")
             }
@@ -198,11 +199,11 @@ class WearMessageSender(private val context: Context) {
             val nodes = try {
                 resolveNodes()
             } catch (e: Exception) {
-                reportError(buildFailureMessage("Failed to reach watch", e), onError)
+                reportError(buildFailureMessage(e), onError)
                 return@launch
             }
             if (nodes.isEmpty()) {
-                reportError(NO_WEAR_MESSAGE, onError)
+                reportError(noWearMessage, onError)
                 return@launch
             }
             nodes.forEach { node ->
@@ -215,9 +216,10 @@ class WearMessageSender(private val context: Context) {
         }
     }
 
-    private fun buildFailureMessage(prefix: String, error: Exception): String {
-        val reason = error.message?.takeIf { it.isNotBlank() } ?: "unknown error"
-        return "$prefix: $reason"
+    private fun buildFailureMessage(error: Exception): String {
+        val reason = error.message?.takeIf { it.isNotBlank() }
+            ?: context.getString(R.string.wear_error_unknown_reason)
+        return context.getString(R.string.wear_error_reach_watch, reason)
     }
 
     private suspend fun reportError(message: String, onError: ((String) -> Unit)?) {

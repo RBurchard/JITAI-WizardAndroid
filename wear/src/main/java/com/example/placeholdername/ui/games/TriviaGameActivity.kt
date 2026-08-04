@@ -6,25 +6,27 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
 import androidx.wear.compose.foundation.lazy.items
 import androidx.wear.compose.material3.Button
 import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.Text
+import com.example.jitaicompanion.R
 import com.example.jitaicompanion.convention.Protocol
 import com.example.jitaicompanion.convention.models.Intervention
 import com.example.jitaicompanion.convention.trivia.TriviaQuestion
+import com.example.jitaicompanion.ui.layout.ssp
+import com.example.jitaicompanion.ui.layout.wearDimens
 import kotlinx.serialization.json.Json
 
 class TriviaGameActivity : MicrogameActivity() {
 
     override val timeoutSeconds = 30
-    override val tutorialTitle = "Trivia"
-    override val tutorialText =
-        "Read the question, then tap the answer (A, B, C or D) you think is correct."
+    override val tutorialTitleRes = R.string.game_trivia_title
+    override val tutorialTextRes = R.string.game_trivia_tutorial
 
     private var question: TriviaQuestion? = null
 
@@ -34,16 +36,85 @@ class TriviaGameActivity : MicrogameActivity() {
         // Question may be embedded in intervention message as JSON, or fall back to a default
         question = try {
             Json.decodeFromString<Intervention>(interventionJson).triviaQuestion
-        } catch (e: Exception) { null } ?: FallbackQuestions.random()
+        } catch (e: Exception) { null } ?: buildFallbackQuestions().random()
     }
+
+    /**
+     * Fallback questions used only when no question arrives from the intervention.
+     * Built here (not as a top-level val) because resolving localized copy needs Activity
+     * [getString]/[getResources] — not available at class-init time for a top-level property.
+     * `correctIndex` is a plain literal tied 1:1 to each question, independent of the answer
+     * array's item order, so a translator reordering a `<string-array>` can't change which
+     * answer scores as correct.
+     */
+    private fun buildFallbackQuestions(): List<TriviaQuestion> = listOf(
+        TriviaQuestion(
+            question = getString(R.string.trivia_fallback_q1_question),
+            answers = resources.getStringArray(R.array.trivia_fallback_q1_answers).toList(),
+            correctIndex = 1
+        ),
+        TriviaQuestion(
+            question = getString(R.string.trivia_fallback_q2_question),
+            answers = listOf("5", "6", "7", "8"),
+            correctIndex = 1
+        ),
+        TriviaQuestion(
+            question = getString(R.string.trivia_fallback_q3_question),
+            answers = resources.getStringArray(R.array.trivia_fallback_q3_answers).toList(),
+            correctIndex = 2
+        ),
+        TriviaQuestion(
+            question = getString(R.string.trivia_fallback_q4_question),
+            answers = resources.getStringArray(R.array.trivia_fallback_q4_answers).toList(),
+            correctIndex = 3
+        ),
+        TriviaQuestion(
+            question = getString(R.string.trivia_fallback_q5_question),
+            answers = listOf("54", "56", "48", "64"),
+            correctIndex = 1
+        ),
+        TriviaQuestion(
+            question = getString(R.string.trivia_fallback_q6_question),
+            answers = listOf("5", "6", "7", "8"),
+            correctIndex = 2
+        ),
+        TriviaQuestion(
+            question = getString(R.string.trivia_fallback_q7_question),
+            answers = resources.getStringArray(R.array.trivia_fallback_q7_answers).toList(),
+            correctIndex = 2
+        ),
+        TriviaQuestion(
+            question = getString(R.string.trivia_fallback_q8_question),
+            answers = resources.getStringArray(R.array.trivia_fallback_q8_answers).toList(),
+            correctIndex = 1
+        ),
+        TriviaQuestion(
+            question = getString(R.string.trivia_fallback_q9_question),
+            answers = listOf("30", "45", "60", "90"),
+            correctIndex = 2
+        ),
+        TriviaQuestion(
+            question = getString(R.string.trivia_fallback_q10_question),
+            answers = resources.getStringArray(R.array.trivia_fallback_q10_answers).toList(),
+            correctIndex = 3
+        )
+    )
 
     @Composable
     override fun GameContent() {
         val q = question ?: return
         var answered by remember { mutableStateOf(false) }
-        var resultMessage by remember { mutableStateOf("") }
+        // Driven directly by a boolean set at the moment the answer is checked — never by
+        // matching against the (localized) result text — so translating "Correct! ★" can't
+        // make every right answer render red (see game_trivia_correct).
+        var wasCorrect by remember { mutableStateOf(false) }
+        // Only the raw substituted answer is stored; the surrounding sentence is resolved
+        // from the resource at render time so the value itself (study data or fallback
+        // copy) is never touched.
+        var correctAnswerText by remember { mutableStateOf("") }
 
         MaterialTheme {
+            val dimens = wearDimens
             ScalingLazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -52,7 +123,7 @@ class TriviaGameActivity : MicrogameActivity() {
                 item {
                     Text(
                         text = q.question,
-                        fontSize = 13.sp,
+                        fontSize = 13.ssp,
                         textAlign = TextAlign.Center,
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
@@ -63,19 +134,24 @@ class TriviaGameActivity : MicrogameActivity() {
                             onClick = {
                                 answered = true
                                 if (idx == q.correctIndex) {
-                                    resultMessage = "Correct! ★"
+                                    wasCorrect = true
                                     vibratePulse()
                                     onGameComplete("Trivia OK")
                                 } else {
-                                    resultMessage = "Wrong! The answer was: ${q.answers[q.correctIndex]}"
+                                    wasCorrect = false
+                                    correctAnswerText = q.answers[q.correctIndex]
                                     onGameFailed("Trivia FAIL")
                                 }
                             },
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp)
+                            modifier = Modifier.fillMaxWidth().padding(vertical = dimens.itemSpacing)
                         ) {
                             Text(
-                                text = "${listOf("A", "B", "C", "D")[idx]}: ${q.answers[idx]}",
-                                fontSize = 11.sp,
+                                text = stringResource(
+                                    R.string.game_trivia_answer_option,
+                                    listOf("A", "B", "C", "D")[idx],
+                                    q.answers[idx]
+                                ),
+                                fontSize = dimens.captionTextSize,
                                 textAlign = TextAlign.Center
                             )
                         }
@@ -83,9 +159,13 @@ class TriviaGameActivity : MicrogameActivity() {
                 } else {
                     item {
                         Text(
-                            text = resultMessage,
-                            fontSize = 14.sp,
-                            color = if (resultMessage.startsWith("Correct")) Color.Green else Color.Red,
+                            text = if (wasCorrect) {
+                                stringResource(R.string.game_trivia_correct)
+                            } else {
+                                stringResource(R.string.game_trivia_wrong_answer_was, correctAnswerText)
+                            },
+                            fontSize = 14.ssp,
+                            color = if (wasCorrect) Color.Green else Color.Red,
                             textAlign = TextAlign.Center
                         )
                     }
@@ -94,16 +174,3 @@ class TriviaGameActivity : MicrogameActivity() {
         }
     }
 }
-
-private val FallbackQuestions = listOf(
-    TriviaQuestion(question = "What is the capital of France?", answers = listOf("Berlin", "Paris", "Madrid", "Rome"), correctIndex = 1),
-    TriviaQuestion(question = "How many sides does a hexagon have?", answers = listOf("5", "6", "7", "8"), correctIndex = 1),
-    TriviaQuestion(question = "What color is the sky on a clear day?", answers = listOf("Green", "Red", "Blue", "Yellow"), correctIndex = 2),
-    TriviaQuestion(question = "Which planet is closest to the Sun?", answers = listOf("Venus", "Earth", "Mars", "Mercury"), correctIndex = 3),
-    TriviaQuestion(question = "What is 7 × 8?", answers = listOf("54", "56", "48", "64"), correctIndex = 1),
-    TriviaQuestion(question = "How many continents are there?", answers = listOf("5", "6", "7", "8"), correctIndex = 2),
-    TriviaQuestion(question = "What is H2O commonly known as?", answers = listOf("Salt", "Sugar", "Water", "Acid"), correctIndex = 2),
-    TriviaQuestion(question = "Which animal is known as man's best friend?", answers = listOf("Cat", "Dog", "Horse", "Rabbit"), correctIndex = 1),
-    TriviaQuestion(question = "How many minutes in an hour?", answers = listOf("30", "45", "60", "90"), correctIndex = 2),
-    TriviaQuestion(question = "What is the largest ocean?", answers = listOf("Atlantic", "Indian", "Arctic", "Pacific"), correctIndex = 3)
-)

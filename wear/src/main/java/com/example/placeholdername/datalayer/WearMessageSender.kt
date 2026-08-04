@@ -3,6 +3,7 @@ package com.example.jitaicompanion.datalayer
 import android.content.Context
 import android.util.Log
 import android.widget.Toast
+import com.example.jitaicompanion.R
 import com.example.jitaicompanion.convention.Protocol
 import com.example.jitaicompanion.convention.models.WatchDataBatch
 import com.google.android.gms.wearable.MessageClient
@@ -39,7 +40,7 @@ class WearMessageSender(private val context: Context) {
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to send $label", e)
                 withContext(Dispatchers.Main) {
-                    Toast.makeText(context, "Failed to send $label: ${e.message}", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, context.getString(R.string.error_send_failed), Toast.LENGTH_SHORT).show()
                 }
             }
         }

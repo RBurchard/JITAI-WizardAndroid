@@ -7,9 +7,9 @@ import android.os.Vibrator
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -18,13 +18,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
 import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
 import androidx.wear.compose.material3.Button
 import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.Text
+import com.example.jitaicompanion.R
 import com.example.jitaicompanion.datalayer.WearMessageSender
+import com.example.jitaicompanion.ui.layout.ProvideWearDimens
+import com.example.jitaicompanion.ui.layout.sdp
+import com.example.jitaicompanion.ui.layout.wearDimens
 import com.example.jitaicompanion.ui.odi.OdiAnimationState
 import com.example.jitaicompanion.ui.odi.OdiCharacter
 import com.example.jitaicompanion.ui.PositiveFeedbackActivity
@@ -43,10 +47,10 @@ abstract class MicrogameActivity : ComponentActivity() {
     abstract val timeoutSeconds: Int
 
     /** Short title shown above the how-to-play text on the tutorial screen. */
-    open val tutorialTitle: String = "Mini-game"
+    open val tutorialTitleRes: Int = R.string.microgame_tutorial_title_default
 
     /** Game-specific explanation so a first-time user knows exactly what to do. */
-    open val tutorialText: String = "Follow the on-screen instructions."
+    open val tutorialTextRes: Int = R.string.microgame_tutorial_text_default
 
     @Composable
     abstract fun GameContent()
@@ -61,7 +65,7 @@ abstract class MicrogameActivity : ComponentActivity() {
         setTurnScreenOn(true)
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
-        setContent { GameWithTutorial() }
+        setContent { ProvideWearDimens { GameWithTutorial() } }
     }
 
     @Composable
@@ -72,39 +76,44 @@ abstract class MicrogameActivity : ComponentActivity() {
         var showTutorial by remember { mutableStateOf(true) }
 
         if (showTutorial) {
-            OdiTutorialScreen(title = tutorialTitle, message = tutorialText) { showTutorial = false }
+            OdiTutorialScreen { showTutorial = false }
         } else {
             GameContent()
         }
     }
 
     @Composable
-    private fun OdiTutorialScreen(title: String, message: String, onStart: () -> Unit) {
+    private fun OdiTutorialScreen(onStart: () -> Unit) {
         MaterialTheme {
+            val dimens = wearDimens
             ScalingLazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 20.dp)
+                contentPadding = dimens.contentPadding
             ) {
                 item { OdiCharacter(state = OdiAnimationState.TALKING) }
-                item { Spacer(Modifier.height(4.dp)) }
+                item { Spacer(Modifier.height(4.sdp)) }
                 item {
                     Text(
-                        text = title,
+                        text = stringResource(tutorialTitleRes),
                         style = MaterialTheme.typography.titleMedium,
                         textAlign = TextAlign.Center
                     )
                 }
-                item { Spacer(Modifier.height(4.dp)) }
+                item { Spacer(Modifier.height(4.sdp)) }
                 item {
                     Text(
-                        text = message,
+                        text = stringResource(tutorialTextRes),
                         style = MaterialTheme.typography.bodyMedium,
                         textAlign = TextAlign.Center
                     )
                 }
-                item { Spacer(Modifier.height(10.dp)) }
-                item { Button(onClick = onStart) { Text("Start") } }
+                item { Spacer(Modifier.height(10.sdp)) }
+                item {
+                    Button(onClick = onStart, modifier = Modifier.fillMaxWidth()) {
+                        Text(stringResource(R.string.microgame_tutorial_start_button))
+                    }
+                }
             }
         }
     }

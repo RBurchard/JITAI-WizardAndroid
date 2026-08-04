@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Strings shared across several watch screens, plus the settings menu.
+
+  Android merges every file in res/values/, so each UI area keeps its own strings_*.xml.
+  Keys defined HERE must not be redefined elsewhere — duplicate resource names fail the build.
+
+  Keep watch copy SHORT. It has to fit a 1.2" screen at the smallest supported size; see
+  ui/layout/WearDimens.kt. German and Dutch run noticeably longer than English, so prefer a
+  clipped-but-clear word over a full sentence.
+-->
+<resources>
+
+    <!-- ── Generic actions ──────────────────────────────────────────────────── -->
+    <string name="common_ok">OK</string>
+    <string name="common_cancel">Cancel</string>
+    <string name="common_back">Back</string>
+    <string name="common_close">Close</string>
+
+    <!-- ── Settings menu ────────────────────────────────────────────────────── -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_open">Settings</string>
+    <string name="settings_language">Language</string>
+    <!-- Picker entry that hands the choice back to the watch's own language setting. -->
+    <string name="settings_language_system">System</string>
+    <!-- Moved into Settings so the main screen is not cramped on small watches. -->
+    <string name="settings_force_end">Force End</string>
+    <string name="settings_force_end_confirm">Close the app and stop tracking?</string>
+
+</resources>

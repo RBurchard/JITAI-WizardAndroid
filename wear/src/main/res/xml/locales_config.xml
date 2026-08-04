@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Languages this watch app ships. Wear OS (API 33+) reads this for the per-app
+  language entry in system settings.
+
+  ADDING A LANGUAGE: add res/values-<tag>/strings.xml, then add one <locale> line here
+  and one entry to AppLanguages.SUPPORTED in locale/LocaleController.kt.
+-->
+<locale-config xmlns:android="http://schemas.android.com/apk/res/android">
+    <locale android:name="en" />
+    <locale android:name="de" />
+    <locale android:name="nl" />
+</locale-config>

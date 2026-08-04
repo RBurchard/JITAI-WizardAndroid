@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Strings shared across several phone screens, plus the language picker.
+
+  Android merges every file in res/values/, so each UI area keeps its own strings_*.xml.
+  Keys defined HERE must not be redefined elsewhere — duplicate resource names fail the build.
+
+  ADDING A LANGUAGE: copy each strings*.xml into res/values-<tag>/ and translate the values.
+  See convention/.../locale/LocaleController.kt for the full checklist.
+-->
+<resources>
+
+    <!-- ── Generic actions, reused across screens ───────────────────────────── -->
+    <string name="common_ok">OK</string>
+    <string name="common_cancel">Abbrechen</string>
+    <string name="common_save">Speichern</string>
+    <string name="common_delete">Löschen</string>
+    <string name="common_back">Zurück</string>
+    <string name="common_done">Fertig</string>
+    <string name="common_close">Schließen</string>
+    <!-- Shown in dropdowns for "nothing selected". Display only — never compared in code. -->
+    <string name="common_none">Keine</string>
+
+    <!-- ── Settings & language picker ───────────────────────────────────────── -->
+    <string name="settings_title">Einstellungen</string>
+    <string name="settings_language">Sprache</string>
+    <string name="settings_language_description">Wähle die Sprache, die in der App verwendet wird.</string>
+    <!-- Picker entry that hands the choice back to the phone's own language setting. -->
+    <string name="settings_language_system">Systemstandard</string>
+    <string name="settings_language_current">Aktuell: %1$s</string>
+    <string name="settings_about">Info</string>
+    <string name="settings_version">Version %1$s</string>
+
+</resources>

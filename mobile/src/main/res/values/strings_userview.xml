@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Auto-generated English source strings for this screen area.
+  Phone app UI text.
+  ADDING A LANGUAGE: copy this file into res/values-<tag>/ and translate the values.
+-->
+<resources>
+    <!-- CameraActivity.kt:25 -->
+    <string name="camera_task_default_prompt">Take a photo</string>
+    <!-- CameraActivity.kt:60 -->
+    <string name="camera_task_open_camera">Open Camera</string>
+    <!-- CameraActivity.kt:68 -->
+    <string name="camera_task_photo_content_desc">Captured photo</string>
+    <!-- CameraActivity.kt:72 -->
+    <string name="camera_task_retake">Retake</string>
+    <!-- CameraActivity.kt:73 -->
+    <string name="camera_task_submit">Submit</string>
+    <!-- ConfirmActionButton.kt:25 -->
+    <string name="confirm_dialog_abort">Abort</string>
+    <!-- ConfirmActionButton.kt:20 -->
+    <string name="confirm_dialog_stop_intervention_message">This will cancel any current interventions!</string>
+    <!-- ConfirmActionButton.kt:19 -->
+    <string name="confirm_dialog_title">Are you sure?</string>
+    <!-- ConfirmActionButton.kt:22 -->
+    <string name="confirm_dialog_yes">Yes</string>
+    <!-- ConfirmActionButton.kt:14 -->
+    <string name="confirm_stop_intervention_button">Stop current intervention</string>
+    <!-- DrawActivity.kt:62 -->
+    <string name="draw_task_clear">Clear</string>
+    <!-- DrawActivity.kt:38 -->
+    <string name="draw_task_default_prompt">Draw a tree</string>
+    <!-- DrawActivity.kt:34 -->
+    <string name="draw_task_default_prompt_initial">Draw something!</string>
+    <!-- UserViewModel.kt:20 (also folded into odi_lines_idle below) -->
+    <string name="odi_line_idle_monitoring">Monitoring...</string>
+
+    <!-- ODI's mood-based dialogue lines, grouped as string-arrays so OdiDialogues.kt
+         (a plain Kotlin object with no Context) can fetch them via
+         context.resources.getStringArray(...).random(). -->
+    <!-- OdiDialogues.kt:5-6 -->
+    <string-array name="odi_lines_idle">
+        <item>Monitoring...</item>
+        <item>Stay sharp!</item>
+        <item>I\'m watching...</item>
+        <item>All clear.</item>
+        <item>Processing...</item>
+        <item>You\'ve got this.</item>
+        <item>Looking good!</item>
+        <item>Keeping an eye out.</item>
+    </string-array>
+    <!-- OdiDialogues.kt:8 -->
+    <string-array name="odi_lines_talking">
+        <item>Focus... you can do this!</item>
+        <item>Check your phone.</item>
+        <item>Task incoming.</item>
+        <item>Hey, listen up!</item>
+    </string-array>
+    <!-- OdiDialogues.kt:9 -->
+    <string-array name="odi_lines_thinking">
+        <item>Analyzing...</item>
+        <item>Hmm...</item>
+        <item>Computing...</item>
+        <item>One moment...</item>
+        <item>Crunching the data...</item>
+    </string-array>
+    <!-- OdiDialogues.kt:10 -->
+    <string-array name="odi_lines_celebrating">
+        <item>You resisted!</item>
+        <item>Excellent control!</item>
+        <item>Mind over matter!</item>
+        <item>Strong work!</item>
+        <item>Outstanding!</item>
+    </string-array>
+    <!-- OdiDialogues.kt:11 -->
+    <string-array name="odi_lines_happy">
+        <item>Nice and steady.</item>
+        <item>Feeling good!</item>
+        <item>That\'s the spirit.</item>
+        <item>Great pace!</item>
+    </string-array>
+    <!-- OdiDialogues.kt:12 -->
+    <string-array name="odi_lines_surprised">
+        <item>Oh!</item>
+        <item>Whoa!</item>
+        <item>Heads up!</item>
+        <item>Did you feel that?</item>
+    </string-array>
+    <!-- OdiDialogues.kt:13 -->
+    <string-array name="odi_lines_sleeping">
+        <item>Zzz...</item>
+        <item>Resting up...</item>
+        <item>Wake me if you need me.</item>
+        <item>Just a little nap.</item>
+    </string-array>
+    <!-- OdiDialogues.kt:14 -->
+    <string-array name="odi_lines_concerned">
+        <item>Easy now...</item>
+        <item>Let\'s slow down.</item>
+        <item>Take a breath.</item>
+        <item>Everything okay?</item>
+    </string-array>
+
+    <!-- UserViewScreen.kt:127 -->
+    <string name="userview_app_footer_version">JITAI Research System v1.0</string>
+    <!-- UserViewScreen.kt:109 -->
+    <string name="userview_last_action">Last: %1$s</string>
+    <!-- UserViewScreen.kt:109 -->
+    <string name="userview_last_action_empty">No activity yet</string>
+    <!-- UserViewScreen.kt:81 -->
+    <string name="userview_odi_name">O D I</string>
+    <!-- UserViewScreen.kt:116 -->
+    <string name="userview_session_elapsed">Session: %1$dm %2$ds</string>
+    <!-- UserViewScreen.kt:103 -->
+    <string name="userview_stat_bpm_label">BPM</string>
+    <!-- UserViewScreen.kt:104 -->
+    <string name="userview_stat_reaction_label">Reaction</string>
+    <!-- UserViewScreen.kt:104 -->
+    <string name="userview_stat_reaction_value_ms">%1$d ms</string>
+    <!-- UserViewScreen.kt:103 -->
+    <string name="userview_stat_value_none">--</string>
+    <!-- UserViewScreen.kt:105 -->
+    <string name="userview_stat_watch_label">Watch</string>
+    <!-- UserViewScreen.kt:105 - accessibility contentDescription for the watch connectivity glyph -->
+    <string name="userview_watch_connected_desc">Watch connected</string>
+    <string name="userview_watch_disconnected_desc">Watch disconnected</string>
+</resources>

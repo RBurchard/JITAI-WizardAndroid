@@ -31,7 +31,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -42,6 +44,7 @@ import com.example.jitaicompanion.convention.models.NotificationType
 import com.example.jitaicompanion.convention.models.ParticipantInfo
 import com.example.jitaicompanion.convention.models.PhoneTaskType
 import com.example.jitaicompanion.convention.models.TriggerKind
+import com.BWPStudio.JITAIWizard.R
 import com.BWPStudio.JITAIWizard.settings.SettingsKeys
 import com.BWPStudio.JITAIWizard.settings.SettingsRepository
 import com.BWPStudio.JITAIWizard.JITAIWizardApp
@@ -113,9 +116,9 @@ fun ExperimentScreen(onWearError: (String) -> Unit = {}) {
         val slot = importScheduleFromUri(context, app, uri)
         if (slot != null) {
             scheduleSlots = app.experimentStore.listSchedules()
-            Toast.makeText(context, "Imported \"$slot\"", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, context.getString(R.string.experiment_toast_import_success, slot), Toast.LENGTH_SHORT).show()
         } else {
-            Toast.makeText(context, "Import failed: not a valid experiment file", Toast.LENGTH_LONG).show()
+            Toast.makeText(context, context.getString(R.string.experiment_toast_import_failed), Toast.LENGTH_LONG).show()
         }
     }
 
@@ -149,7 +152,7 @@ fun ExperimentScreen(onWearError: (String) -> Unit = {}) {
     fun finalizeCsvExport() {
         scope.launch {
             val path = withContext(Dispatchers.IO) { app.csvLogger.finalizeExport() }
-            if (path != null) Toast.makeText(context, "CSV saved: $path", Toast.LENGTH_LONG).show()
+            if (path != null) Toast.makeText(context, context.getString(R.string.experiment_toast_csv_saved, path), Toast.LENGTH_LONG).show()
         }
     }
 
@@ -170,16 +173,25 @@ fun ExperimentScreen(onWearError: (String) -> Unit = {}) {
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         if (!running) {
-                            Button(onClick = { settingsOpen = true }, modifier = Modifier.weight(1f)) { Text("Settings") }
+                            Button(onClick = { settingsOpen = true }, modifier = Modifier.weight(1f)) {
+                                Text(stringResource(R.string.experiment_settings), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            }
                         } else {
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(experiment, maxLines = 1, fontSize = 10.sp, lineHeight = 12.sp)
                                 Text(participantId, maxLines = 1, fontSize = 10.sp, lineHeight = 12.sp)
-                                Text(if (saveLogsBool) "Saving Logs" else "No logs", fontSize = 10.sp, lineHeight = 12.sp)
+                                Text(
+                                    if (saveLogsBool) stringResource(R.string.experiment_status_saving_logs) else stringResource(R.string.experiment_status_no_logs),
+                                    fontSize = 10.sp, lineHeight = 12.sp
+                                )
                             }
                         }
-                        Button(onClick = { scheduleSlots = app.experimentStore.listSchedules(); loadDialogOpen = true }, enabled = !running, modifier = Modifier.weight(1f)) { Text("Load") }
-                        Button(onClick = { saveDialogOpen = true }, enabled = !running, modifier = Modifier.weight(1f)) { Text("Save") }
+                        Button(onClick = { scheduleSlots = app.experimentStore.listSchedules(); loadDialogOpen = true }, enabled = !running, modifier = Modifier.weight(1f)) {
+                            Text(stringResource(R.string.experiment_button_load), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        }
+                        Button(onClick = { saveDialogOpen = true }, enabled = !running, modifier = Modifier.weight(1f)) {
+                            Text(stringResource(R.string.common_save), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        }
                     }
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 2.dp),
@@ -189,7 +201,7 @@ fun ExperimentScreen(onWearError: (String) -> Unit = {}) {
                         Button(onClick = {
                             running = !running
                             if (running) {
-                                if (list.isEmpty()) { Toast.makeText(context, "No events!", Toast.LENGTH_SHORT).show(); running = false; return@Button }
+                                if (list.isEmpty()) { Toast.makeText(context, context.getString(R.string.experiment_toast_no_events), Toast.LENGTH_SHORT).show(); running = false; return@Button }
                                 eventToHighlight = list[0]
                                 logger.createLogFile(experiment, participantId, LocalDateTime.now().format(formatter), saveLogsBool)
                                 logger.log(LogEvent(eventType = "Experiment", value = "start"))
@@ -199,10 +211,15 @@ fun ExperimentScreen(onWearError: (String) -> Unit = {}) {
                                 logger.log(LogEvent(eventType = "Experiment", value = "stop"))
                                 finalizeCsvExport()
                             }
-                        }, enabled = !editMode, modifier = Modifier.weight(1f)) { Text(if (running) "Stop" else "Start") }
+                        }, enabled = !editMode, modifier = Modifier.weight(1f)) {
+                            Text(
+                                if (running) stringResource(R.string.experiment_button_stop) else stringResource(R.string.experiment_button_start),
+                                maxLines = 1, overflow = TextOverflow.Ellipsis
+                            )
+                        }
 
                         Button(onClick = {
-                            if (list.isEmpty()) { Toast.makeText(context, "No events!", Toast.LENGTH_SHORT).show(); return@Button }
+                            if (list.isEmpty()) { Toast.makeText(context, context.getString(R.string.experiment_toast_no_events), Toast.LENGTH_SHORT).show(); return@Button }
                             val current = app.experimentStore.active.value
                             val updated = current.copy(
                                 name = experiment,
@@ -214,12 +231,16 @@ fun ExperimentScreen(onWearError: (String) -> Unit = {}) {
                             com.BWPStudio.JITAIWizard.triggers.TriggerEngine.setTriggers(updated.triggers)
                             logger.createLogFile(experiment, participantId, LocalDateTime.now().format(formatter), saveLogsBool)
                             app.experimentEngine.start(EngineMode.AUTO)
-                            Toast.makeText(context, "Auto run started", Toast.LENGTH_SHORT).show()
-                        }, enabled = !editMode && !running, modifier = Modifier.weight(1f)) { Text("Auto") }
+                            Toast.makeText(context, context.getString(R.string.experiment_toast_auto_run_started), Toast.LENGTH_SHORT).show()
+                        }, enabled = !editMode && !running, modifier = Modifier.weight(1f)) {
+                            Text(stringResource(R.string.experiment_button_auto), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        }
 
                         // Jot a session note ("Person felt uncomfortable" etc.). Recorded as a log
                         // event that syncs into the Control Station DB / CSV via the /logs pipeline.
-                        Button(onClick = { noteDialogOpen = true }, modifier = Modifier.weight(1f)) { Text("📝 Note") }
+                        Button(onClick = { noteDialogOpen = true }, modifier = Modifier.weight(1f)) {
+                            Text(stringResource(R.string.experiment_button_note), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        }
                     }
                 }
 
@@ -260,7 +281,7 @@ fun ExperimentScreen(onWearError: (String) -> Unit = {}) {
                                 ) {
                                     if (editMode) {
                                         IconButton(modifier = Modifier.draggableHandle(), onClick = {}) {
-                                            Icon(Icons.Rounded.Menu, contentDescription = "Reorder")
+                                            Icon(Icons.Rounded.Menu, contentDescription = stringResource(R.string.experiment_cd_reorder))
                                         }
                                     }
                                     Text(event.type, Modifier.padding(5.dp).fillMaxWidth(if (editMode) 0.18f else 0.3f), fontSize = 18.sp)
@@ -274,19 +295,19 @@ fun ExperimentScreen(onWearError: (String) -> Unit = {}) {
                                             taskLabel?.let { "📱 $it" }
                                         ).joinToString("  ")
                                         Text(
-                                            "${iv.type} · ${iv.notification}  ${iv.durationSeconds}s" +
+                                            stringResource(R.string.experiment_event_intervention_summary, iv.type, iv.notification, iv.durationSeconds) +
                                             (if (extras.isNotEmpty()) "\n$extras" else "") +
                                             "\n\"$msgPreview\"",
                                             Modifier.padding(5.dp).fillMaxWidth(if (editMode) 0.45f else 1f),
                                             fontSize = 13.sp
                                         )
                                     } else {
-                                        Text("Duration: ${event.duration.toInt()} s")
+                                        Text(stringResource(R.string.experiment_event_duration, event.duration.toInt()))
                                     }
                                     if (editMode) {
                                         Row(horizontalArrangement = Arrangement.End) {
-                                            IconButton(onClick = { eventToEdit = event }) { Icon(Icons.Rounded.Edit, "Edit") }
-                                            IconButton(onClick = { list = list.toMutableList().apply { remove(event) } }) { Icon(Icons.Rounded.Delete, "Delete") }
+                                            IconButton(onClick = { eventToEdit = event }) { Icon(Icons.Rounded.Edit, stringResource(R.string.common_edit)) }
+                                            IconButton(onClick = { list = list.toMutableList().apply { remove(event) } }) { Icon(Icons.Rounded.Delete, stringResource(R.string.common_delete)) }
                                         }
                                     }
                                 }
@@ -326,7 +347,7 @@ fun ExperimentScreen(onWearError: (String) -> Unit = {}) {
                 SessionNoteDialog(onDismiss = { noteDialogOpen = false }) { text ->
                     if (text.isNotBlank()) {
                         logger.log(LogEvent(eventType = "Note", value = text))
-                        Toast.makeText(context, "Note recorded", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, context.getString(R.string.experiment_toast_note_recorded), Toast.LENGTH_SHORT).show()
                     }
                 }
             }
@@ -339,27 +360,27 @@ fun ExperimentScreen(onWearError: (String) -> Unit = {}) {
                     onDismiss = { saveDialogOpen = false },
                     onSave = { slot ->
                         if (list.isEmpty()) {
-                            Toast.makeText(context, "No events to save!", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, context.getString(R.string.experiment_toast_no_events_to_save), Toast.LENGTH_SHORT).show()
                         } else {
                             val built = buildCurrentExperiment()
                             app.experimentStore.saveSchedule(slot, built)
                             // Also make it the active schedule so it persists + syncs to the ControlStation.
                             app.experimentStore.replace(built)
                             com.BWPStudio.JITAIWizard.triggers.TriggerEngine.setTriggers(built.triggers)
-                            Toast.makeText(context, "Saved schedule \"$slot\"", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, context.getString(R.string.experiment_toast_schedule_saved, slot), Toast.LENGTH_SHORT).show()
                         }
                         saveDialogOpen = false
                     },
                     onExport = { slot ->
                         if (list.isEmpty()) {
-                            Toast.makeText(context, "No events to export!", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, context.getString(R.string.experiment_toast_no_events_to_export), Toast.LENGTH_SHORT).show()
                         } else {
                             val exp = buildCurrentExperiment().copy(name = slot)
                             val path = app.experimentStore.exportToDownloads(exp)
                             if (path != null) {
-                                Toast.makeText(context, "Exported to $path", Toast.LENGTH_LONG).show()
+                                Toast.makeText(context, context.getString(R.string.experiment_toast_exported_to, path), Toast.LENGTH_LONG).show()
                             } else {
-                                Toast.makeText(context, "Export failed - check storage", Toast.LENGTH_LONG).show()
+                                Toast.makeText(context, context.getString(R.string.experiment_toast_export_failed), Toast.LENGTH_LONG).show()
                             }
                         }
                         saveDialogOpen = false
@@ -380,13 +401,13 @@ fun ExperimentScreen(onWearError: (String) -> Unit = {}) {
                     onLoad = { slot ->
                         val loaded = app.experimentStore.loadSchedule(slot)
                         if (loaded == null) {
-                            Toast.makeText(context, "Could not load \"$slot\"", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, context.getString(R.string.experiment_toast_load_failed, slot), Toast.LENGTH_SHORT).show()
                         } else {
                             list = loaded.events.map { Event.fromShared(it) }
                             experiment = loaded.name
                             app.experimentStore.replace(loaded)
                             com.BWPStudio.JITAIWizard.triggers.TriggerEngine.setTriggers(loaded.triggers)
-                            Toast.makeText(context, "Loaded schedule \"$slot\"", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, context.getString(R.string.experiment_toast_schedule_loaded, slot), Toast.LENGTH_SHORT).show()
                         }
                         loadDialogOpen = false
                     }
@@ -429,22 +450,22 @@ fun ExperimentScreen(onWearError: (String) -> Unit = {}) {
                                 IconButton(onClick = {
                                     val idx = list.indexOf(eventToHighlight)
                                     if (idx > 0) { eventToHighlight = list[idx - 1]; interventionSent = false }
-                                    else Toast.makeText(context, "Already at first event!", Toast.LENGTH_SHORT).show()
+                                    else Toast.makeText(context, context.getString(R.string.experiment_toast_already_first_event), Toast.LENGTH_SHORT).show()
                                     elapsedSeconds = 0
                                     logger.log(LogEvent(eventType = "Experiment", value = "previous"))
-                                }, modifier = Modifier.size(32.dp)) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") }
-                                Text("Previous", fontSize = 10.sp)
+                                }, modifier = Modifier.size(32.dp)) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.common_back)) }
+                                Text(stringResource(R.string.experiment_run_previous), fontSize = 10.sp)
                             }
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 IconButton(onClick = {
                                     elapsedSeconds = 0; interventionSent = false
                                     logger.log(LogEvent(eventType = "Experiment", value = "restart"))
-                                }, modifier = Modifier.size(32.dp)) { Icon(Icons.Rounded.Refresh, "Restart") }
-                                Text("Restart", fontSize = 10.sp)
+                                }, modifier = Modifier.size(32.dp)) { Icon(Icons.Rounded.Refresh, stringResource(R.string.experiment_run_restart)) }
+                                Text(stringResource(R.string.experiment_run_restart), fontSize = 10.sp)
                             }
                         }
                         Text(
-                            "${elapsedSeconds}s",
+                            stringResource(R.string.experiment_run_elapsed_seconds, elapsedSeconds),
                             modifier = Modifier.align(Alignment.Center),
                             style = MaterialTheme.typography.titleMedium,
                             color = if (elapsedSeconds <= eventToHighlight!!.duration) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.error
@@ -456,8 +477,8 @@ fun ExperimentScreen(onWearError: (String) -> Unit = {}) {
                                         interventionSent = true
                                         sendIntervention(context, intervention, onWearError)
                                         logger.log(LogEvent(eventType = "Intervention", value = "start", details = intervention.message))
-                                    }, modifier = Modifier.size(32.dp), enabled = !interventionSent) { Icon(Icons.AutoMirrored.Filled.Send, "Send") }
-                                    Text("Intervention", fontSize = 10.sp)
+                                    }, modifier = Modifier.size(32.dp), enabled = !interventionSent) { Icon(Icons.AutoMirrored.Filled.Send, stringResource(R.string.experiment_run_send_cd)) }
+                                    Text(stringResource(R.string.intervention_label), fontSize = 10.sp)
                                 }
                             }
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -467,14 +488,14 @@ fun ExperimentScreen(onWearError: (String) -> Unit = {}) {
                                         eventToHighlight = list[idx + 1]; interventionSent = false
                                         logger.log(LogEvent(eventType = "Experiment", value = "next"))
                                     } else {
-                                        Toast.makeText(context, "Finished!", Toast.LENGTH_SHORT).show()
+                                        Toast.makeText(context, context.getString(R.string.experiment_toast_finished), Toast.LENGTH_SHORT).show()
                                         eventToHighlight = null; running = false
                                         logger.log(LogEvent(eventType = "Experiment", value = "finished"))
                                         finalizeCsvExport()
                                     }
                                     elapsedSeconds = 0
-                                }, modifier = Modifier.size(32.dp)) { Icon(Icons.AutoMirrored.Filled.ArrowForward, "Next") }
-                                Text("Next", fontSize = 10.sp)
+                                }, modifier = Modifier.size(32.dp)) { Icon(Icons.AutoMirrored.Filled.ArrowForward, stringResource(R.string.experiment_run_next)) }
+                                Text(stringResource(R.string.experiment_run_next), fontSize = 10.sp)
                             }
                         }
                     }
@@ -533,19 +554,19 @@ private fun EditSettingsDialog(
     Dialog(onDismissRequest = onDismiss) {
         Surface(shape = MaterialTheme.shapes.medium, tonalElevation = 8.dp, modifier = Modifier.padding(16.dp)) {
             Column(modifier = Modifier.padding(16.dp).verticalScroll(rememberScrollState())) {
-                Text("Settings", style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.experiment_settings), style = MaterialTheme.typography.titleMedium)
                 Spacer(Modifier.height(8.dp))
-                OutlinedTextField(value = experimentName, onValueChange = { experimentName = it }, label = { Text("Experiment Name") }, singleLine = true)
-                OutlinedTextField(value = participant, onValueChange = { participant = it }, label = { Text("Participant ID") }, singleLine = true)
-                OutlinedTextField(value = notes, onValueChange = { notes = it }, label = { Text("Experiment Notes / Rundown") }, minLines = 2, maxLines = 5)
+                OutlinedTextField(value = experimentName, onValueChange = { experimentName = it }, label = { Text(stringResource(R.string.settings_field_experiment_name)) }, singleLine = true)
+                OutlinedTextField(value = participant, onValueChange = { participant = it }, label = { Text(stringResource(R.string.settings_field_participant_id)) }, singleLine = true)
+                OutlinedTextField(value = notes, onValueChange = { notes = it }, label = { Text(stringResource(R.string.settings_field_notes)) }, minLines = 2, maxLines = 5)
                 Spacer(Modifier.height(8.dp))
                 Row(Modifier.fillMaxWidth().clickable { saveLogs = !saveLogs }, verticalAlignment = Alignment.CenterVertically) {
                     Checkbox(checked = saveLogs, onCheckedChange = { saveLogs = it })
-                    Text("Save Logs")
+                    Text(stringResource(R.string.settings_checkbox_save_logs))
                 }
                 Spacer(Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
-                    Button(onClick = { onDismiss(); onSettingsChanged(experimentName, participant, saveLogs, notes) }) { Text("OK") }
+                    Button(onClick = { onDismiss(); onSettingsChanged(experimentName, participant, saveLogs, notes) }) { Text(stringResource(R.string.common_ok)) }
                 }
             }
         }
@@ -558,24 +579,36 @@ private fun SessionNoteDialog(onDismiss: () -> Unit, onSave: (String) -> Unit) {
     Dialog(onDismissRequest = onDismiss) {
         Surface(shape = MaterialTheme.shapes.medium, tonalElevation = 8.dp, modifier = Modifier.padding(16.dp)) {
             Column(modifier = Modifier.padding(16.dp)) {
-                Text("Session note", style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.note_dialog_title), style = MaterialTheme.typography.titleMedium)
                 Spacer(Modifier.height(8.dp))
                 OutlinedTextField(
                     value = text, onValueChange = { text = it },
-                    label = { Text("What happened?") },
-                    placeholder = { Text("e.g. Participant felt uncomfortable") },
+                    label = { Text(stringResource(R.string.note_dialog_field_label)) },
+                    placeholder = { Text(stringResource(R.string.note_dialog_placeholder)) },
                     minLines = 2, maxLines = 5
                 )
                 Spacer(Modifier.height(12.dp))
                 Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
-                    TextButton(onClick = onDismiss) { Text("Cancel") }
+                    TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) }
                     Spacer(Modifier.width(8.dp))
-                    Button(onClick = { onSave(text); onDismiss() }) { Text("Save") }
+                    Button(onClick = { onSave(text); onDismiss() }) { Text(stringResource(R.string.common_save)) }
                 }
             }
         }
     }
 }
+
+/**
+ * Intervention.type wire values ("Text"/"Timer"/"Yes/No") are consumed by the watch and must
+ * stay literal English in code/data. This maps each wire value to a localized display label
+ * for dropdowns; the stored/selected value passed around in code remains the English literal.
+ */
+@Composable
+private fun interventionTypeDisplayOptions(): List<Pair<String, String>> = listOf(
+    "Text" to stringResource(R.string.intervention_type_text_display),
+    "Timer" to stringResource(R.string.intervention_type_timer_display),
+    "Yes/No" to stringResource(R.string.intervention_type_yesno_display)
+)
 
 @Composable
 private fun EditEventDialog(event: Event, onDismiss: () -> Unit, onSave: (Event) -> Unit) {
@@ -593,14 +626,15 @@ private fun EditEventDialog(event: Event, onDismiss: () -> Unit, onSave: (Event)
     Dialog(onDismissRequest = onDismiss) {
         Surface(shape = MaterialTheme.shapes.medium, tonalElevation = 8.dp, modifier = Modifier.padding(16.dp)) {
             Column(modifier = Modifier.padding(16.dp).verticalScroll(rememberScrollState())) {
-                Text("Edit Event", style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.event_editor_title), style = MaterialTheme.typography.titleMedium)
                 Spacer(Modifier.height(8.dp))
-                OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Name") })
-                OutlinedTextField(value = duration, onValueChange = { duration = it }, label = { Text("Duration (s)") },
+                OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text(stringResource(R.string.event_editor_field_name)) })
+                OutlinedTextField(value = duration, onValueChange = { duration = it }, label = { Text(stringResource(R.string.event_editor_field_duration_seconds)) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), singleLine = true)
                 Spacer(Modifier.height(8.dp))
                 if (intervention == null) {
                     Button(onClick = {
+                        // "Text" is a wire value consumed by the watch — must stay literal English.
                         intervention = Intervention(UUID.randomUUID().toString(), "Text", NotificationType.VIBRATION1, "", 10)
                         interventionType = "Text"
                         interventionNotification = NotificationType.VIBRATION1
@@ -608,66 +642,67 @@ private fun EditEventDialog(event: Event, onDismiss: () -> Unit, onSave: (Event)
                         interventionDuration = "10"
                         interventionGameType = null
                         interventionPhoneTask = null
-                    }) { Text("Add Intervention") }
+                    }) { Text(stringResource(R.string.event_editor_add_intervention)) }
                 } else {
-                    Text("Intervention", style = MaterialTheme.typography.titleSmall)
+                    Text(stringResource(R.string.intervention_label), style = MaterialTheme.typography.titleSmall)
                     Spacer(Modifier.height(4.dp))
 
-                    StringOptionDropdown(selected = interventionType, label = "Type",
-                        options = listOf("Text", "Timer", "Yes/No"), onSelect = { interventionType = it })
+                    // interventionType stays one of the literal English wire values ("Text"/"Timer"/
+                    // "Yes/No") consumed by the watch; only the dropdown's displayed label is localized.
+                    val typeOptions = interventionTypeDisplayOptions()
                     StringOptionDropdown(
-                        selected = interventionNotification.name, label = "Notify",
+                        selected = typeOptions.first { it.first == interventionType }.second,
+                        label = stringResource(R.string.intervention_field_type),
+                        options = typeOptions.map { it.second },
+                        onSelect = { label -> interventionType = typeOptions.first { it.second == label }.first }
+                    )
+                    StringOptionDropdown(
+                        selected = interventionNotification.name, label = stringResource(R.string.intervention_field_notify),
                         options = NotificationType.entries.filter { it != NotificationType.CANCEL }.map { it.name },
                         onSelect = { interventionNotification = NotificationType.valueOf(it) }
                     )
                     OutlinedTextField(value = interventionMessage, onValueChange = { interventionMessage = it },
-                        label = { Text("Message") }, maxLines = 3)
+                        label = { Text(stringResource(R.string.intervention_field_message)) }, maxLines = 3)
                     OutlinedTextField(value = interventionDuration, onValueChange = { interventionDuration = it },
-                        label = { Text("Duration (s)") },
+                        label = { Text(stringResource(R.string.event_editor_field_duration_seconds)) },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), singleLine = true)
 
                     Spacer(Modifier.height(8.dp))
-                    Text("Microgame (optional)", style = MaterialTheme.typography.labelMedium)
-                    // "None" + all GameType entries
+                    Text(stringResource(R.string.intervention_microgame_section), style = MaterialTheme.typography.labelMedium)
+                    // "None" sentinel is never compared as text: selecting a label that doesn't
+                    // match a GameType entry name (i.e. the None label) naturally yields null.
+                    val noneLabel = stringResource(R.string.common_none)
                     StringOptionDropdown(
-                        selected = interventionGameType?.name ?: "None",
-                        label = "Microgame",
-                        options = listOf("None") + GameType.entries.map { it.name },
+                        selected = interventionGameType?.name ?: noneLabel,
+                        label = stringResource(R.string.intervention_field_microgame),
+                        options = listOf(noneLabel) + GameType.entries.map { it.name },
                         onSelect = { selected ->
-                            if (selected == "None") {
-                                interventionGameType = null
-                            } else {
-                                interventionGameType = GameType.valueOf(selected)
-                                interventionPhoneTask = null   // mutually exclusive
-                            }
+                            interventionGameType = GameType.entries.firstOrNull { it.name == selected }
+                            if (interventionGameType != null) interventionPhoneTask = null   // mutually exclusive
                         }
                     )
 
                     Spacer(Modifier.height(4.dp))
-                    Text("— or Phone Task —", style = MaterialTheme.typography.labelSmall,
+                    Text(stringResource(R.string.intervention_or_phone_task), style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                     StringOptionDropdown(
-                        selected = interventionPhoneTask?.name ?: "None",
-                        label = "Phone Task",
-                        options = listOf("None") + PhoneTaskType.entries.map { it.name },
+                        selected = interventionPhoneTask?.name ?: noneLabel,
+                        label = stringResource(R.string.intervention_field_phone_task),
+                        options = listOf(noneLabel) + PhoneTaskType.entries.map { it.name },
                         onSelect = { selected ->
-                            if (selected == "None") {
-                                interventionPhoneTask = null
-                            } else {
-                                interventionPhoneTask = PhoneTaskType.valueOf(selected)
-                                interventionGameType = null   // mutually exclusive
-                            }
+                            interventionPhoneTask = PhoneTaskType.entries.firstOrNull { it.name == selected }
+                            if (interventionPhoneTask != null) interventionGameType = null   // mutually exclusive
                         }
                     )
 
                     Spacer(Modifier.height(4.dp))
                     Button(onClick = { intervention = null },
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
-                    ) { Text("Remove Intervention") }
+                    ) { Text(stringResource(R.string.event_editor_remove_intervention)) }
                 }
                 Spacer(Modifier.height(12.dp))
                 Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
-                    TextButton(onClick = onDismiss) { Text("Cancel") }
+                    TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) }
                     Spacer(Modifier.width(8.dp))
                     Button(onClick = {
                         val gt = interventionGameType
@@ -685,11 +720,11 @@ private fun EditEventDialog(event: Event, onDismiss: () -> Unit, onSave: (Event)
                             )
                         )
                         if (!eventIsValid(updated)) {
-                            Toast.makeText(context, "Fill in all fields!", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, context.getString(R.string.experiment_toast_fill_all_fields), Toast.LENGTH_SHORT).show()
                             return@Button
                         }
                         onSave(updated); onDismiss()
-                    }) { Text("Save") }
+                    }) { Text(stringResource(R.string.common_save)) }
                 }
             }
         }
@@ -709,7 +744,7 @@ private fun TriggerSummaryRow(app: JITAIWizardApp) {
     ) {
         Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)) {
             Text(
-                "Triggers",
+                stringResource(R.string.trigger_summary_title),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(bottom = 4.dp)
@@ -717,15 +752,15 @@ private fun TriggerSummaryRow(app: JITAIWizardApp) {
             FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 triggers.forEach { trigger ->
                     val kindLabel = when (trigger.kind) {
-                        is TriggerKind.Manual -> "Manual"
-                        is TriggerKind.RapidMovement -> "Rapid (${(trigger.kind as TriggerKind.RapidMovement).accelThreshold}g)"
+                        is TriggerKind.Manual -> stringResource(R.string.trigger_kind_manual)
+                        is TriggerKind.RapidMovement -> stringResource(R.string.trigger_kind_rapid, (trigger.kind as TriggerKind.RapidMovement).accelThreshold)
                         is TriggerKind.RepeatingMovement -> {
                             val k = trigger.kind as TriggerKind.RepeatingMovement
-                            "Repeat ${k.minHz}–${k.maxHz} Hz"
+                            stringResource(R.string.trigger_kind_repeat, k.minHz, k.maxHz)
                         }
                         is TriggerKind.HeartRate -> {
                             val k = trigger.kind as TriggerKind.HeartRate
-                            "HR ${if (k.above) ">" else "<"} ${k.bpm}"
+                            stringResource(R.string.trigger_kind_heart_rate, if (k.above) ">" else "<", k.bpm)
                         }
                     }
                     FilterChip(
@@ -757,17 +792,17 @@ private fun SaveScheduleDialog(
     Dialog(onDismissRequest = onDismiss) {
         Surface(shape = MaterialTheme.shapes.medium, tonalElevation = 8.dp, modifier = Modifier.padding(16.dp)) {
             Column(modifier = Modifier.padding(16.dp)) {
-                Text("Save Schedule", style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.save_schedule_title), style = MaterialTheme.typography.titleMedium)
                 Spacer(Modifier.height(8.dp))
                 OutlinedTextField(
                     value = slotName,
                     onValueChange = { slotName = it },
-                    label = { Text("Schedule name") },
+                    label = { Text(stringResource(R.string.save_schedule_field_name)) },
                     singleLine = true
                 )
                 if (existing.isNotEmpty()) {
                     Spacer(Modifier.height(8.dp))
-                    Text("Overwrite existing:", style = MaterialTheme.typography.labelMedium)
+                    Text(stringResource(R.string.save_schedule_overwrite_existing), style = MaterialTheme.typography.labelMedium)
                     LazyColumn(modifier = Modifier.heightIn(max = 140.dp)) {
                         items(existing) { name ->
                             Text(
@@ -783,12 +818,12 @@ private fun SaveScheduleDialog(
                 OutlinedButton(
                     onClick = { onExport(slotName.trim().ifBlank { ExperimentStore.DEFAULT_SCHEDULE }) },
                     modifier = Modifier.fillMaxWidth()
-                ) { Text("Export to file (Downloads)") }
+                ) { Text(stringResource(R.string.save_schedule_export_button)) }
                 Spacer(Modifier.height(12.dp))
                 Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
-                    TextButton(onClick = onDismiss) { Text("Cancel") }
+                    TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) }
                     Spacer(Modifier.width(8.dp))
-                    Button(onClick = { onSave(slotName.trim().ifBlank { ExperimentStore.DEFAULT_SCHEDULE }) }) { Text("Save") }
+                    Button(onClick = { onSave(slotName.trim().ifBlank { ExperimentStore.DEFAULT_SCHEDULE }) }) { Text(stringResource(R.string.common_save)) }
                 }
             }
         }
@@ -806,16 +841,16 @@ private fun LoadScheduleDialog(
     Dialog(onDismissRequest = onDismiss) {
         Surface(shape = MaterialTheme.shapes.medium, tonalElevation = 8.dp, modifier = Modifier.padding(16.dp)) {
             Column(modifier = Modifier.padding(16.dp)) {
-                Text("Load Schedule", style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.load_schedule_title), style = MaterialTheme.typography.titleMedium)
                 Spacer(Modifier.height(8.dp))
                 // Bring in an experiment JSON from the phone; it is saved as a slot and
                 // appears in the list below right away.
                 OutlinedButton(onClick = onImport, modifier = Modifier.fillMaxWidth()) {
-                    Text("Import from phone…")
+                    Text(stringResource(R.string.load_schedule_import_button))
                 }
                 Spacer(Modifier.height(8.dp))
                 if (schedules.isEmpty()) {
-                    Text("No saved schedules yet.", style = MaterialTheme.typography.bodyMedium)
+                    Text(stringResource(R.string.load_schedule_empty), style = MaterialTheme.typography.bodyMedium)
                 } else {
                     LazyColumn(modifier = Modifier.heightIn(max = 260.dp)) {
                         items(schedules, key = { it }) { name ->
@@ -829,7 +864,7 @@ private fun LoadScheduleDialog(
                                 )
                                 if (name != ExperimentStore.DEFAULT_SCHEDULE) {
                                     IconButton(onClick = { onDelete(name) }) {
-                                        Icon(Icons.Rounded.Delete, contentDescription = "Delete")
+                                        Icon(Icons.Rounded.Delete, contentDescription = stringResource(R.string.common_delete))
                                     }
                                 }
                             }
@@ -838,7 +873,7 @@ private fun LoadScheduleDialog(
                 }
                 Spacer(Modifier.height(12.dp))
                 Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
-                    TextButton(onClick = onDismiss) { Text("Close") }
+                    TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_close)) }
                 }
             }
         }

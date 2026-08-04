@@ -8,6 +8,8 @@ import android.os.Bundle
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -17,13 +19,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.wear.compose.material3.Button
 import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.Text
 import androidx.compose.runtime.rememberCoroutineScope
+import com.example.jitaicompanion.R
+import com.example.jitaicompanion.ui.layout.ssp
+import com.example.jitaicompanion.ui.layout.wearDimens
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.PI
@@ -32,11 +37,14 @@ import kotlin.math.sqrt
 
 class LockPickingGameActivity : MicrogameActivity(), SensorEventListener {
 
+    /** Result of the stage-3 timed tap. Modeled as an enum — never derived from the
+     * localized on-screen label — so the color/outcome logic can't break when the
+     * displayed text is translated (see game_result_perfect / game_lockpicking_mistimed). */
+    enum class HitResult { NONE, PERFECT, MISTIMED }
+
     override val timeoutSeconds = 60
-    override val tutorialTitle = "Lock Picking"
-    override val tutorialText =
-        "Crack the lock in 3 stages: 1) hold your wrist still, 2) swipe in a circle to turn the dial, " +
-        "3) tap the button when the moving dot is inside the green zone."
+    override val tutorialTitleRes = R.string.game_lockpicking_title
+    override val tutorialTextRes = R.string.game_lockpicking_tutorial
 
     private lateinit var sensorManager: SensorManager
     private var currentMagnitude = 0f
@@ -92,6 +100,7 @@ class LockPickingGameActivity : MicrogameActivity(), SensorEventListener {
             }
         }
 
+        val dimens = wearDimens
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Canvas(modifier = Modifier.fillMaxSize().padding(12.dp)) {
                 val progress = elapsed / target
@@ -106,10 +115,17 @@ class LockPickingGameActivity : MicrogameActivity(), SensorEventListener {
                     size = Size(r * 2, r * 2)
                 )
             }
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("Stage 1/3", fontSize = 11.sp, color = Color.Gray)
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    stringResource(R.string.game_lockpicking_stage_indicator, 1, 3),
+                    fontSize = dimens.captionTextSize,
+                    color = Color.Gray
+                )
                 Spacer(Modifier.height(4.dp))
-                Text("Hold still!", fontSize = 16.sp)
+                Text(stringResource(R.string.game_lockpicking_hold_still), fontSize = 16.ssp)
             }
         }
     }
@@ -120,6 +136,7 @@ class LockPickingGameActivity : MicrogameActivity(), SensorEventListener {
         var lastAngle by remember { mutableStateOf<Float?>(null) }
         val targetRotation = 270f
         var completed by remember { mutableStateOf(false) }
+        val dimens = wearDimens
 
         Box(modifier = Modifier
             .fillMaxSize()
@@ -165,10 +182,17 @@ class LockPickingGameActivity : MicrogameActivity(), SensorEventListener {
                     size = Size(r * 2, r * 2)
                 )
             }
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("Stage 2/3", fontSize = 11.sp, color = Color.Gray)
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    stringResource(R.string.game_lockpicking_stage_indicator, 2, 3),
+                    fontSize = dimens.captionTextSize,
+                    color = Color.Gray
+                )
                 Spacer(Modifier.height(4.dp))
-                Text("Swipe in a circle!", fontSize = 13.sp, textAlign = TextAlign.Center)
+                Text(stringResource(R.string.game_lockpicking_swipe_circle), fontSize = 13.ssp, textAlign = TextAlign.Center)
             }
         }
     }
@@ -179,8 +203,9 @@ class LockPickingGameActivity : MicrogameActivity(), SensorEventListener {
         val targetStart = 30f
         val targetSweep = 60f
         var tapped by remember { mutableStateOf(false) }
-        var hitResult by remember { mutableStateOf("") }
+        var hitResult by remember { mutableStateOf(HitResult.NONE) }
         val scope = rememberCoroutineScope()
+        val dimens = wearDimens
 
         LaunchedEffect(Unit) {
             val revolution = 3000L
@@ -209,13 +234,25 @@ class LockPickingGameActivity : MicrogameActivity(), SensorEventListener {
                 val dotY = center.y + r * kotlin.math.sin(radians)
                 drawCircle(color = Color.White, radius = 10.dp.toPx(), center = Offset(dotX, dotY))
             }
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("Stage 3/3", fontSize = 11.sp, color = Color.Gray)
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    stringResource(R.string.game_lockpicking_stage_indicator, 3, 3),
+                    fontSize = dimens.captionTextSize,
+                    color = Color.Gray
+                )
                 Spacer(Modifier.height(4.dp))
-                if (hitResult.isNotEmpty()) {
-                    Text(hitResult, fontSize = 14.sp, color = if (hitResult == "Perfect!") Color.Green else Color.Red)
+                if (hitResult != HitResult.NONE) {
+                    val label = when (hitResult) {
+                        HitResult.PERFECT -> stringResource(R.string.game_result_perfect)
+                        HitResult.MISTIMED -> stringResource(R.string.game_lockpicking_mistimed)
+                        HitResult.NONE -> ""
+                    }
+                    Text(label, fontSize = 14.ssp, color = if (hitResult == HitResult.PERFECT) Color.Green else Color.Red)
                 } else {
-                    Text("Tap in the green zone!", fontSize = 12.sp, textAlign = TextAlign.Center)
+                    Text(stringResource(R.string.game_lockpicking_tap_green_zone), fontSize = 12.ssp, textAlign = TextAlign.Center)
                     Spacer(Modifier.height(8.dp))
                     Button(onClick = {
                         if (tapped) return@Button
@@ -223,16 +260,16 @@ class LockPickingGameActivity : MicrogameActivity(), SensorEventListener {
                         if (normalizedAngle < 0f) normalizedAngle += 360f
                         if (normalizedAngle >= targetStart && normalizedAngle <= targetStart + targetSweep) {
                             tapped = true
-                            hitResult = "Perfect!"
+                            hitResult = HitResult.PERFECT
                             onComplete()
                         } else {
-                            hitResult = "Too early/late!"
+                            hitResult = HitResult.MISTIMED
                             scope.launch {
                                 delay(1500L)
-                                hitResult = ""
+                                hitResult = HitResult.NONE
                             }
                         }
-                    }) { Text("TAP!") }
+                    }) { Text(stringResource(R.string.game_lockpicking_tap_button)) }
                 }
             }
         }

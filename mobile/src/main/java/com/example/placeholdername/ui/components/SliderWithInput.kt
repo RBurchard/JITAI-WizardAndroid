@@ -44,7 +44,7 @@ fun SliderWithInput(
                 }
             },
             singleLine = true,
-            modifier = Modifier.width(60.dp),
+            modifier = Modifier.width(72.dp),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
         )
     }
