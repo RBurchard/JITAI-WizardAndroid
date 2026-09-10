@@ -35,6 +35,9 @@
     <string name="control_label_message">Bericht:</string>
     <!-- ControlScreen.kt:71 -->
     <string name="control_placeholder_message">Voer bericht in</string>
+    <string name="control_stop_button">Lopende interventie stoppen</string>
+    <string name="control_stop_confirm_title">Weet je het zeker?</string>
+    <string name="control_stop_confirm_text">Hiermee wordt elke interventie die nu op het horloge loopt geannuleerd.</string>
     <!-- ControlScreen.kt:45 -->
     <string name="control_title">Interventies versturen</string>
     <!-- DebugViewScreen.kt:68 -->

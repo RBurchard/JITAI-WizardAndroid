@@ -2,4 +2,6 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    <!-- Kept in step with JitaiColors.Background in ui/theme/JitaiTheme.kt. -->
+    <color name="app_background">#FF0D1B2A</color>
 </resources>

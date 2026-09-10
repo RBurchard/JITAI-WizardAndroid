@@ -35,6 +35,9 @@
     <string name="control_label_message">Message:</string>
     <!-- ControlScreen.kt:71 -->
     <string name="control_placeholder_message">Enter message</string>
+    <string name="control_stop_button">Stop current intervention</string>
+    <string name="control_stop_confirm_title">Are you sure?</string>
+    <string name="control_stop_confirm_text">This cancels any intervention running on the watch right now.</string>
     <!-- ControlScreen.kt:45 -->
     <string name="control_title">Send Interventions</string>
     <!-- DebugViewScreen.kt:68 -->

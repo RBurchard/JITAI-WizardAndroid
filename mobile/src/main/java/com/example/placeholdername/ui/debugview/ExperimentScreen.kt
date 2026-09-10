@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -65,6 +66,35 @@ import sh.calvin.reorderable.rememberReorderableLazyListState
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.UUID
+
+/**
+ * Tone of a toolbar button.
+ *
+ * The row used to be six identical filled buttons, which made Start look exactly as
+ * consequential as Save. Colour carries the difference now: neutral for file operations, accent
+ * for the ones that reach the watch, and green/red for the run switch.
+ */
+private enum class ToolbarTone { NEUTRAL, ACCENT, GO, STOP }
+
+@Composable
+private fun toolbarColors(tone: ToolbarTone): ButtonColors = when (tone) {
+    ToolbarTone.NEUTRAL -> ButtonDefaults.buttonColors(
+        containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+        contentColor = MaterialTheme.colorScheme.primary,
+    )
+    ToolbarTone.ACCENT -> ButtonDefaults.buttonColors(
+        containerColor = MaterialTheme.colorScheme.primaryContainer,
+        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+    )
+    ToolbarTone.GO -> ButtonDefaults.buttonColors(
+        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+    )
+    ToolbarTone.STOP -> ButtonDefaults.buttonColors(
+        containerColor = MaterialTheme.colorScheme.errorContainer,
+        contentColor = MaterialTheme.colorScheme.onErrorContainer,
+    )
+}
 
 @Composable
 fun ExperimentScreen(onWearError: (String) -> Unit = {}) {
@@ -165,15 +195,19 @@ fun ExperimentScreen(onWearError: (String) -> Unit = {}) {
                 // Top bar — split into two rows so the controls never squish into vertical
                 // text on narrow devices. Row 1: identity + file ops, Row 2: run controls.
                 Column(
-                    modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceVariant)
+                    modifier = Modifier.fillMaxWidth()
+                        .background(MaterialTheme.colorScheme.surfaceContainerLow)
+                        .padding(vertical = 4.dp)
                 ) {
                     Row(
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 2.dp),
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 3.dp),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         if (!running) {
-                            Button(onClick = { settingsOpen = true }, modifier = Modifier.weight(1f)) {
+                            Button(onClick = { settingsOpen = true }, modifier = Modifier.weight(1f).height(42.dp),
+                                shape = RoundedCornerShape(12.dp), colors = toolbarColors(ToolbarTone.NEUTRAL),
+                                contentPadding = PaddingValues(horizontal = 6.dp)) {
                                 Text(stringResource(R.string.experiment_settings), maxLines = 1, overflow = TextOverflow.Ellipsis)
                             }
                         } else {
@@ -186,16 +220,22 @@ fun ExperimentScreen(onWearError: (String) -> Unit = {}) {
                                 )
                             }
                         }
-                        Button(onClick = { scheduleSlots = app.experimentStore.listSchedules(); loadDialogOpen = true }, enabled = !running, modifier = Modifier.weight(1f)) {
+                        Button(onClick = { scheduleSlots = app.experimentStore.listSchedules(); loadDialogOpen = true },
+                            enabled = !running, modifier = Modifier.weight(1f).height(42.dp),
+                            shape = RoundedCornerShape(12.dp), colors = toolbarColors(ToolbarTone.NEUTRAL),
+                            contentPadding = PaddingValues(horizontal = 6.dp)) {
                             Text(stringResource(R.string.experiment_button_load), maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }
-                        Button(onClick = { saveDialogOpen = true }, enabled = !running, modifier = Modifier.weight(1f)) {
+                        Button(onClick = { saveDialogOpen = true }, enabled = !running,
+                            modifier = Modifier.weight(1f).height(42.dp),
+                            shape = RoundedCornerShape(12.dp), colors = toolbarColors(ToolbarTone.NEUTRAL),
+                            contentPadding = PaddingValues(horizontal = 6.dp)) {
                             Text(stringResource(R.string.common_save), maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }
                     }
                     Row(
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 2.dp),
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 3.dp),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Button(onClick = {
@@ -211,7 +251,10 @@ fun ExperimentScreen(onWearError: (String) -> Unit = {}) {
                                 logger.log(LogEvent(eventType = "Experiment", value = "stop"))
                                 finalizeCsvExport()
                             }
-                        }, enabled = !editMode, modifier = Modifier.weight(1f)) {
+                        }, enabled = !editMode, modifier = Modifier.weight(1f).height(42.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = toolbarColors(if (running) ToolbarTone.STOP else ToolbarTone.GO),
+                            contentPadding = PaddingValues(horizontal = 6.dp)) {
                             Text(
                                 if (running) stringResource(R.string.experiment_button_stop) else stringResource(R.string.experiment_button_start),
                                 maxLines = 1, overflow = TextOverflow.Ellipsis
@@ -232,13 +275,17 @@ fun ExperimentScreen(onWearError: (String) -> Unit = {}) {
                             logger.createLogFile(experiment, participantId, LocalDateTime.now().format(formatter), saveLogsBool)
                             app.experimentEngine.start(EngineMode.AUTO)
                             Toast.makeText(context, context.getString(R.string.experiment_toast_auto_run_started), Toast.LENGTH_SHORT).show()
-                        }, enabled = !editMode && !running, modifier = Modifier.weight(1f)) {
+                        }, enabled = !editMode && !running, modifier = Modifier.weight(1f).height(42.dp),
+                            shape = RoundedCornerShape(12.dp), colors = toolbarColors(ToolbarTone.ACCENT),
+                            contentPadding = PaddingValues(horizontal = 6.dp)) {
                             Text(stringResource(R.string.experiment_button_auto), maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }
 
                         // Jot a session note ("Person felt uncomfortable" etc.). Recorded as a log
                         // event that syncs into the Control Station DB / CSV via the /logs pipeline.
-                        Button(onClick = { noteDialogOpen = true }, modifier = Modifier.weight(1f)) {
+                        Button(onClick = { noteDialogOpen = true }, modifier = Modifier.weight(1f).height(42.dp),
+                            shape = RoundedCornerShape(12.dp), colors = toolbarColors(ToolbarTone.ACCENT),
+                            contentPadding = PaddingValues(horizontal = 6.dp)) {
                             Text(stringResource(R.string.experiment_button_note), maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }
                     }
@@ -262,13 +309,15 @@ fun ExperimentScreen(onWearError: (String) -> Unit = {}) {
                     items(list, key = { it.id }) { event ->
                         ReorderableItem(reorderState, key = event.id) { isDragging ->
                             val elevation by animateDpAsState(if (isDragging) 4.dp else 0.dp)
-                            Surface(shadowElevation = elevation) {
+                            // Shaped so the list reads as a stack of cards. The Surface clips
+                            // to the shape, which rounds the background of the row inside it too.
+                            Surface(shadowElevation = elevation, shape = RoundedCornerShape(12.dp)) {
                                 Row(
-                                    modifier = Modifier.fillMaxWidth().padding(horizontal = 3.dp)
+                                    modifier = Modifier.fillMaxWidth()
                                         .background(
                                             if (eventIsValid(event)) {
                                                 if (event == eventToHighlight) MaterialTheme.colorScheme.primaryContainer
-                                                else MaterialTheme.colorScheme.surfaceContainer
+                                                else MaterialTheme.colorScheme.surfaceContainerHigh
                                             } else MaterialTheme.colorScheme.errorContainer
                                         )
                                         .combinedClickable(onClick = {}, onDoubleClick = {
@@ -418,7 +467,7 @@ fun ExperimentScreen(onWearError: (String) -> Unit = {}) {
             if (!running) {
                 FloatingActionButton(
                     onClick = { editMode = !editMode; if (!editMode) scope.launch { lazyListState.animateScrollToItem(0) } },
-                    containerColor = if (editMode) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface,
+                    containerColor = if (editMode) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainerHighest,
                     contentColor = if (editMode) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.primary,
                     modifier = Modifier.align(Alignment.BottomEnd).navigationBarsPadding().padding(16.dp)
                 ) { Icon(Icons.Default.Edit, null) }

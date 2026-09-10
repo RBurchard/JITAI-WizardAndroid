@@ -35,6 +35,9 @@
     <string name="control_label_message">Nachricht:</string>
     <!-- ControlScreen.kt:71 -->
     <string name="control_placeholder_message">Nachricht eingeben</string>
+    <string name="control_stop_button">Laufende Intervention stoppen</string>
+    <string name="control_stop_confirm_title">Sicher?</string>
+    <string name="control_stop_confirm_text">Damit wird jede gerade laufende Intervention auf der Uhr abgebrochen.</string>
     <!-- ControlScreen.kt:45 -->
     <string name="control_title">Interventionen senden</string>
     <!-- DebugViewScreen.kt:68 -->

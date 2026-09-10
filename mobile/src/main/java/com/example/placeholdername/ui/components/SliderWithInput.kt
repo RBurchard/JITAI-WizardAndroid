@@ -20,7 +20,8 @@ fun SliderWithInput(
     var textValue by remember(value) { mutableStateOf(value.toInt().toString()) }
     var sliderPosition by remember { mutableFloatStateOf(value) }
 
-    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(16.dp)) {
+    // No outer padding of its own: the only caller sits inside a card that already has some.
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
         Slider(
             value = sliderPosition,
             onValueChange = { newValue ->
@@ -30,6 +31,16 @@ fun SliderWithInput(
             },
             valueRange = valueRange,
             steps = ((valueRange.endInclusive - valueRange.start) / step).toInt() - 1,
+            // Same reason as GameSettingsScreen: the theme's green secondary container makes an
+            // empty track look like a full one.
+            colors = SliderDefaults.colors(
+                thumbColor = MaterialTheme.colorScheme.primary,
+                activeTrackColor = MaterialTheme.colorScheme.primary,
+                // Ticks off: this one runs 1..60, and sixty dots read as noise, not as a scale.
+                activeTickColor = androidx.compose.ui.graphics.Color.Transparent,
+                inactiveTrackColor = MaterialTheme.colorScheme.outlineVariant,
+                inactiveTickColor = androidx.compose.ui.graphics.Color.Transparent,
+            ),
             modifier = Modifier.weight(1f)
         )
         Spacer(Modifier.width(16.dp))

@@ -27,6 +27,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -286,6 +287,15 @@ private fun SettingSlider(
             },
             valueRange = min.toFloat()..max.toFloat(),
             steps = (max - min - 1).coerceAtLeast(0),
+            // Spelled out rather than left to the theme: the default inactive track picks up the
+            // scheme's green secondary container, which reads as a filled bar on a dark screen.
+            colors = SliderDefaults.colors(
+                thumbColor = Color(0xFF42A5F5),
+                activeTrackColor = Color(0xFF42A5F5),
+                activeTickColor = Color(0xFF0D1B2A),
+                inactiveTrackColor = Color(0xFF24394E),
+                inactiveTickColor = Color(0xFF5A7793),
+            ),
         )
     }
 }

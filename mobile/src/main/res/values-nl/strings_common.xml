@@ -20,6 +20,7 @@
     <string name="common_close">Sluiten</string>
     <!-- Shown in dropdowns for "nothing selected". Display only — never compared in code. -->
     <string name="common_none">Geen</string>
+    <string name="common_yes">Ja</string>
 
     <!-- ── Settings & language picker ───────────────────────────────────────── -->
     <string name="settings_title">Instellingen</string>

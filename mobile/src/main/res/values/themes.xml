@@ -1,8 +1,13 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Base application theme. -->
-    <style name="Base.Theme.JitaiCompanion" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your light theme here. -->
-        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+    <!--
+        Anchored to Dark rather than DayNight on purpose. Every screen paints its own dark
+        surfaces, so on a phone set to light mode a DayNight window flashed white before Compose
+        drew its first frame, and any View-based dialog inherited light colors underneath a dark
+        app.
+    -->
+    <style name="Base.Theme.JitaiCompanion" parent="Theme.Material3.Dark.NoActionBar">
+        <item name="android:windowBackground">@color/app_background</item>
     </style>
 
     <style name="Theme.JitaiCompanion" parent="Base.Theme.JitaiCompanion" />
