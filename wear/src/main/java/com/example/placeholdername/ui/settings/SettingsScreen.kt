@@ -16,6 +16,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -31,8 +32,17 @@ import androidx.wear.compose.material3.IconButton
 import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.Text
 import com.example.jitaicompanion.R
+import android.content.Context
+import android.content.Intent
 import com.example.jitaicompanion.convention.locale.AppLanguages
 import com.example.jitaicompanion.convention.locale.LocaleController
+import com.example.jitaicompanion.ui.games.GameSettings
+import com.example.jitaicompanion.ui.games.LockPenalty
+import com.example.jitaicompanion.ui.games.LockPickingGameActivity
+import com.example.jitaicompanion.ui.games.MicrogameActivity
+import com.example.jitaicompanion.ui.games.SimonSaysGameActivity
+import com.example.jitaicompanion.ui.games.StandStillGameActivity
+import com.example.jitaicompanion.ui.games.TriviaGameActivity
 import com.example.jitaicompanion.ui.layout.sdp
 import com.example.jitaicompanion.ui.layout.ssp
 import com.example.jitaicompanion.ui.layout.wearDimens
@@ -82,7 +92,7 @@ fun SettingsScreen(onBack: () -> Unit, onForceEnd: () -> Unit) {
                     color = Color(0xFF8899BB)
                 )
 
-                LanguageRow(
+                SelectableRow(
                     label = stringResource(R.string.settings_language_system),
                     selected = currentTag == AppLanguages.SYSTEM,
                     dimens = dimens
@@ -91,11 +101,14 @@ fun SettingsScreen(onBack: () -> Unit, onForceEnd: () -> Unit) {
                     currentTag = AppLanguages.SYSTEM
                 }
                 AppLanguages.SUPPORTED.forEach { lang ->
-                    LanguageRow(label = lang.nativeName, selected = currentTag == lang.tag, dimens = dimens) {
+                    SelectableRow(label = lang.nativeName, selected = currentTag == lang.tag, dimens = dimens) {
                         LocaleController.setLanguage(context, lang.tag)
                         currentTag = lang.tag
                     }
                 }
+
+                Spacer(Modifier.height(dimens.itemSpacing * 2))
+                GameSection(context = context, dimens = dimens)
 
                 Spacer(Modifier.height(dimens.itemSpacing * 2))
                 Button(onClick = { confirmingEnd = true }) {
@@ -107,8 +120,124 @@ fun SettingsScreen(onBack: () -> Unit, onForceEnd: () -> Unit) {
     }
 }
 
+/**
+ * Mini-game tuning and free play.
+ *
+ * Lives on the watch rather than in the phone app because both audiences are at the wrist: a
+ * researcher dials the difficulty in during setup, and the participant can then play a round
+ * while the phone side is still being configured. Practice rounds send nothing to the phone —
+ * see [MicrogameActivity.EXTRA_PRACTICE] — so free play can never look like a completed
+ * intervention in the study data.
+ */
 @Composable
-private fun LanguageRow(
+private fun GameSection(context: Context, dimens: com.example.jitaicompanion.ui.layout.WearDimens) {
+    var difficulty by remember { mutableIntStateOf(GameSettings.getSimonDifficulty(context)) }
+    var rounds by remember { mutableIntStateOf(GameSettings.getSimonRounds(context)) }
+    var lockDifficulty by remember { mutableIntStateOf(GameSettings.getLockDifficulty(context)) }
+    var lockPenalty by remember { mutableStateOf(GameSettings.getLockPenalty(context)) }
+
+    Text(
+        stringResource(R.string.settings_games),
+        fontSize = dimens.captionTextSize,
+        color = Color(0xFF8899BB)
+    )
+    Spacer(Modifier.height(dimens.itemSpacing))
+
+    SettingSlider(
+        label = stringResource(R.string.settings_simon_speed),
+        value = difficulty,
+        min = GameSettings.MIN_DIFFICULTY,
+        max = GameSettings.MAX_DIFFICULTY,
+        valueLabel = stringResource(R.string.settings_value_of, difficulty, GameSettings.MAX_DIFFICULTY),
+    ) {
+        difficulty = it
+        GameSettings.setSimonDifficulty(context, it)
+    }
+
+    SettingSlider(
+        label = stringResource(R.string.settings_simon_rounds),
+        value = rounds,
+        min = GameSettings.MIN_ROUNDS,
+        max = GameSettings.MAX_ROUNDS,
+        valueLabel = "$rounds",
+    ) {
+        rounds = it
+        GameSettings.setSimonRounds(context, it)
+    }
+
+    SettingSlider(
+        label = stringResource(R.string.settings_lock_difficulty),
+        value = lockDifficulty,
+        min = GameSettings.MIN_DIFFICULTY,
+        max = GameSettings.MAX_DIFFICULTY,
+        valueLabel = stringResource(R.string.settings_value_of, lockDifficulty, GameSettings.MAX_DIFFICULTY),
+    ) {
+        lockDifficulty = it
+        GameSettings.setLockDifficulty(context, it)
+    }
+
+    Spacer(Modifier.height(dimens.itemSpacing))
+    Text(
+        stringResource(R.string.settings_lock_penalty),
+        fontSize = dimens.captionTextSize,
+        color = Color(0xFF8899BB)
+    )
+    // A three-way choice, not a slider: the options are kinds of consequence, not points on a
+    // scale, and naming each one is the only way a researcher can pick the right one at a glance.
+    LockPenalty.entries.forEach { option ->
+        SelectableRow(
+            label = stringResource(
+                when (option) {
+                    LockPenalty.STUN -> R.string.settings_lock_penalty_stun
+                    LockPenalty.PUSHBACK -> R.string.settings_lock_penalty_pushback
+                    LockPenalty.RESET -> R.string.settings_lock_penalty_reset
+                }
+            ),
+            selected = lockPenalty == option,
+            dimens = dimens
+        ) {
+            lockPenalty = option
+            GameSettings.setLockPenalty(context, option)
+        }
+    }
+
+    Spacer(Modifier.height(dimens.itemSpacing))
+    Text(
+        stringResource(R.string.settings_practice),
+        fontSize = dimens.captionTextSize,
+        color = Color(0xFF8899BB)
+    )
+    Text(
+        stringResource(R.string.settings_practice_hint),
+        fontSize = dimens.captionTextSize,
+        color = Color(0xFF61708A),
+        textAlign = TextAlign.Center
+    )
+    Spacer(Modifier.height(dimens.itemSpacing))
+
+    val practiceGames = listOf(
+        R.string.game_simonsays_title to SimonSaysGameActivity::class.java,
+        R.string.game_lockpicking_title to LockPickingGameActivity::class.java,
+        R.string.game_trivia_title to TriviaGameActivity::class.java,
+        R.string.game_standstill_title to StandStillGameActivity::class.java,
+    )
+    practiceGames.forEach { (labelRes, activity) ->
+        Button(
+            onClick = {
+                context.startActivity(
+                    Intent(context, activity).putExtra(MicrogameActivity.EXTRA_PRACTICE, true)
+                )
+            },
+            modifier = Modifier.fillMaxWidth().padding(vertical = 2.sdp)
+        ) {
+            Text(stringResource(labelRes), fontSize = dimens.bodyTextSize)
+        }
+    }
+}
+
+/** One row of a single-choice list: label on the left, tick on the right when picked. */
+@Composable
+private fun SelectableRow(
     label: String,
     selected: Boolean,
     dimens: com.example.jitaicompanion.ui.layout.WearDimens,

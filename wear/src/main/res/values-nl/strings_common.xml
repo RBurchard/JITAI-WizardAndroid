@@ -27,4 +27,21 @@
     <string name="settings_force_end">Geforceerd stoppen</string>
     <string name="settings_force_end_confirm">App sluiten en registratie stoppen?</string>
 
+
+    <!-- ── Mini-game tuning + free play (ui/settings/SettingsScreen.kt) ─────── -->
+    <string name="settings_games">Minigames</string>
+    <string name="settings_simon_speed">Simon-tempo</string>
+    <string name="settings_simon_rounds">Simon-rondes</string>
+    <string name="settings_value_of">%1$d/%2$d</string>
+    <string name="settings_practice">Oefenen</string>
+    <string name="settings_practice_hint">Vrij spelen. Er wordt niets vastgelegd.</string>
+
+
+    <!-- Lock-picking tuning: sensitivity/run length, and what a slip costs. -->
+    <string name="settings_lock_difficulty">Slot-niveau</string>
+    <string name="settings_lock_penalty">Straf bij fout</string>
+    <string name="settings_lock_penalty_stun">Verdoven</string>
+    <string name="settings_lock_penalty_pushback">Terugzetten</string>
+    <string name="settings_lock_penalty_reset">Fase opnieuw</string>
+
 </resources>

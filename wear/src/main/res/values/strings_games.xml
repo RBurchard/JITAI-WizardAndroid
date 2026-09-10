@@ -7,32 +7,22 @@
 <resources>
     <!-- LockPickingGameActivity.kt:112 -->
     <string name="game_lockpicking_hold_still">Hold still!</string>
-    <!-- LockPickingGameActivity.kt:229 -->
-    <string name="game_lockpicking_mistimed">Too early/late!</string>
     <!-- LockPickingGameActivity.kt:110 -->
     <string name="game_lockpicking_stage_indicator">Stage %1$d/%2$d</string>
     <!-- LockPickingGameActivity.kt:171 -->
-    <string name="game_lockpicking_swipe_circle">Swipe in a circle!</string>
-    <!-- LockPickingGameActivity.kt:235 -->
-    <string name="game_lockpicking_tap_button">TAP!</string>
-    <!-- LockPickingGameActivity.kt:218 -->
-    <string name="game_lockpicking_tap_green_zone">Tap in the green zone!</string>
+    <string name="game_lockpicking_swipe_circle">Swipe in circles!</string>
     <!-- LockPickingGameActivity.kt:36 -->
     <string name="game_lockpicking_title">Lock Picking</string>
     <!-- LockPickingGameActivity.kt:38 -->
-    <string name="game_lockpicking_tutorial">Crack the lock in 3 stages: 1) hold your wrist still, 2) swipe in a circle to turn the dial, 3) tap the button when the moving dot is inside the green zone.</string>
+    <string name="game_lockpicking_tutorial">Three stages. 1) Hold your wrist still so the beam stays clear of your head. 2) Turn the crown (or swipe in circles) to work the lock. Beams flash before they drop — turn back to wait one out. 3) Turn the dial to crack the safe: the buzz gets stronger near the notch. Hold it there, three times.</string>
     <!-- LockPickingGameActivity.kt:226 -->
     <string name="game_result_perfect">Perfect!</string>
-    <!-- SimonSaysGameActivity.kt:108 -->
-    <string name="game_simonsays_good_watch">Good! Watch...</string>
     <!-- SimonSaysGameActivity.kt:21 -->
     <string name="game_simonsays_title">Simon Says</string>
     <!-- SimonSaysGameActivity.kt:23 -->
-    <string name="game_simonsays_tutorial">Watch which colored squares light up, then tap them back in the same order. The sequence gets one step longer each round — clear 4 rounds to win!</string>
+    <string name="game_simonsays_tutorial">Each quarter of the screen is a colour AND a shape. Watch which ones light up, then tap them back in the same order. One step longer every round — a wrong tap just replays the round.</string>
     <!-- SimonSaysGameActivity.kt:40 -->
     <string name="game_simonsays_watch_carefully">Watch carefully!</string>
-    <!-- SimonSaysGameActivity.kt:96 -->
-    <string name="game_simonsays_wrong_restarting">Wrong! Restarting...</string>
     <!-- SimonSaysGameActivity.kt:65 -->
     <string name="game_simonsays_your_turn_round">Your turn! Round %1$d/%2$d</string>
     <!-- StandStillGameActivity.kt:90 -->
@@ -44,19 +34,13 @@
     <!-- StandStillGameActivity.kt:26 -->
     <string name="game_standstill_title">Stand Still</string>
     <!-- StandStillGameActivity.kt:28 -->
-    <string name="game_standstill_tutorial">Hold your arm completely still until the ring fills up. If you move, the timer resets and you start over!</string>
-    <!-- TriviaGameActivity.kt:77 -->
-    <string name="game_trivia_answer_option">%1$s: %2$s</string>
+    <string name="game_standstill_tutorial">Hold your arm still until the ring fills. The bar at the bottom shows how close you are to moving too much — keep it left of the line.</string>
     <!-- TriviaGameActivity.kt:66 -->
     <string name="game_trivia_correct">Correct! ★</string>
     <!-- TriviaGameActivity.kt:25 -->
     <string name="game_trivia_title">Trivia</string>
     <!-- TriviaGameActivity.kt:27 -->
     <string name="game_trivia_tutorial">Read the question, then tap the answer (A, B, C or D) you think is correct.</string>
-    <!-- TriviaGameActivity.kt:70 -->
-    <string name="game_trivia_wrong_answer_was">Wrong! The answer was: %1$s</string>
-    <!-- MicrogameActivity.kt:107 -->
-    <string name="microgame_tutorial_start_button">Start</string>
     <!-- MicrogameActivity.kt:49 -->
     <string name="microgame_tutorial_text_default">Follow the on-screen instructions.</string>
     <!-- MicrogameActivity.kt:47 -->
@@ -123,4 +107,22 @@
     <string name="trivia_fallback_q8_question">Which animal is known as man\'s best friend?</string>
     <!-- TriviaGameActivity.kt:107 -->
     <string name="trivia_fallback_q9_question">How many minutes in an hour?</string>
+
+    <!-- Rework: tutorial opt-in, colour-blind shape cues, rotary safe dial. -->
+    <string name="microgame_tutorial_ask_known">Do you know how this one works?</string>
+    <string name="microgame_tutorial_skip">Yes, start</string>
+    <string name="microgame_tutorial_explain">Explain it</string>
+    <string name="game_simonsays_wrong_retry">Oops — watch again</string>
+    <string name="game_shape_star">Star</string>
+    <string name="game_shape_square">Square</string>
+    <string name="game_shape_circle">Circle</string>
+    <string name="game_shape_heart">Heart</string>
+    <string name="game_steadiness_label">Steadiness</string>
+    <string name="game_lockpicking_too_much_motion">Too much movement!</string>
+    <string name="game_lockpicking_stunned">Zapped! Hold on…</string>
+    <string name="game_lockpicking_turn_crown">Turn the crown!</string>
+    <string name="game_lockpicking_turn_crown_feel">Turn — feel for the notch</string>
+    <string name="game_lockpicking_drag_dial_feel">Drag — feel for the notch</string>
+    <string name="game_lockpicking_hold_it">Hold it there!</string>
+    <string name="game_trivia_wrong">Not quite!</string>
 </resources>

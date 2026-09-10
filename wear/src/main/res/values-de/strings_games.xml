@@ -7,32 +7,22 @@
 <resources>
     <!-- LockPickingGameActivity.kt:112 -->
     <string name="game_lockpicking_hold_still">Halt still!</string>
-    <!-- LockPickingGameActivity.kt:229 -->
-    <string name="game_lockpicking_mistimed">Zu früh/spät!</string>
     <!-- LockPickingGameActivity.kt:110 -->
     <string name="game_lockpicking_stage_indicator">Stufe %1$d/%2$d</string>
     <!-- LockPickingGameActivity.kt:171 -->
     <string name="game_lockpicking_swipe_circle">Im Kreis wischen!</string>
-    <!-- LockPickingGameActivity.kt:235 -->
-    <string name="game_lockpicking_tap_button">TIPPEN!</string>
-    <!-- LockPickingGameActivity.kt:218 -->
-    <string name="game_lockpicking_tap_green_zone">Tippe in die grüne Zone!</string>
     <!-- LockPickingGameActivity.kt:36 -->
     <string name="game_lockpicking_title">Schlossknacken</string>
     <!-- LockPickingGameActivity.kt:38 -->
-    <string name="game_lockpicking_tutorial">Knacke das Schloss in 3 Schritten: 1) Handgelenk stillhalten, 2) im Kreis wischen, um das Rad zu drehen, 3) tippen, wenn der bewegte Punkt in der grünen Zone ist.</string>
+    <string name="game_lockpicking_tutorial">Drei Stufen. 1) Handgelenk stillhalten, damit der Strahl über dem Kopf bleibt. 2) Krone drehen (oder im Kreis wischen), um das Schloss zu bewegen. Strahlen blinken, bevor sie fallen — dreh zurück und warte ab. 3) Am Rad drehen, um den Safe zu knacken: Nahe der Kerbe wird das Vibrieren stärker. Dort halten, dreimal.</string>
     <!-- LockPickingGameActivity.kt:226 -->
     <string name="game_result_perfect">Perfekt!</string>
-    <!-- SimonSaysGameActivity.kt:108 -->
-    <string name="game_simonsays_good_watch">Gut! Schau zu...</string>
     <!-- SimonSaysGameActivity.kt:21 -->
     <string name="game_simonsays_title">Simon sagt</string>
     <!-- SimonSaysGameActivity.kt:23 -->
-    <string name="game_simonsays_tutorial">Merk dir, welche farbigen Felder aufleuchten, und tippe sie in der gleichen Reihenfolge nach. Die Folge wird jede Runde einen Schritt länger — schaffe 4 Runden, um zu gewinnen!</string>
+    <string name="game_simonsays_tutorial">Jedes Viertel des Bildschirms hat eine Farbe UND eine Form. Merke dir, welche aufleuchten, und tippe sie in derselben Reihenfolge nach. Jede Runde einen Schritt länger — ein Fehler wiederholt nur die Runde.</string>
     <!-- SimonSaysGameActivity.kt:40 -->
     <string name="game_simonsays_watch_carefully">Schau genau hin!</string>
-    <!-- SimonSaysGameActivity.kt:96 -->
-    <string name="game_simonsays_wrong_restarting">Falsch! Neustart...</string>
     <!-- SimonSaysGameActivity.kt:65 -->
     <string name="game_simonsays_your_turn_round">Du bist dran! Runde %1$d/%2$d</string>
     <!-- StandStillGameActivity.kt:90 -->
@@ -44,19 +34,13 @@
     <!-- StandStillGameActivity.kt:26 -->
     <string name="game_standstill_title">Stillstehen</string>
     <!-- StandStillGameActivity.kt:28 -->
-    <string name="game_standstill_tutorial">Halte deinen Arm völlig still, bis sich der Ring füllt. Wenn du dich bewegst, startet der Timer neu!</string>
-    <!-- TriviaGameActivity.kt:77 -->
-    <string name="game_trivia_answer_option">%1$s: %2$s</string>
+    <string name="game_standstill_tutorial">Halte den Arm still, bis der Ring voll ist. Der Balken unten zeigt, wie nah du an zu viel Bewegung bist — bleib links der Linie.</string>
     <!-- TriviaGameActivity.kt:66 -->
     <string name="game_trivia_correct">Richtig! ★</string>
     <!-- TriviaGameActivity.kt:25 -->
     <string name="game_trivia_title">Quiz</string>
     <!-- TriviaGameActivity.kt:27 -->
     <string name="game_trivia_tutorial">Lies die Frage und tippe die Antwort (A, B, C oder D), die du für richtig hältst.</string>
-    <!-- TriviaGameActivity.kt:70 -->
-    <string name="game_trivia_wrong_answer_was">Falsch! Die Antwort war: %1$s</string>
-    <!-- MicrogameActivity.kt:107 -->
-    <string name="microgame_tutorial_start_button">Start</string>
     <!-- MicrogameActivity.kt:49 -->
     <string name="microgame_tutorial_text_default">Folge den Anweisungen auf dem Bildschirm.</string>
     <!-- MicrogameActivity.kt:47 -->
@@ -123,4 +107,22 @@
     <string name="trivia_fallback_q8_question">Welches Tier gilt als bester Freund des Menschen?</string>
     <!-- TriviaGameActivity.kt:107 -->
     <string name="trivia_fallback_q9_question">Wie viele Minuten hat eine Stunde?</string>
+
+    <!-- Rework: tutorial opt-in, colour-blind shape cues, rotary safe dial. -->
+    <string name="microgame_tutorial_ask_known">Weißt du, wie das geht?</string>
+    <string name="microgame_tutorial_skip">Ja, los</string>
+    <string name="microgame_tutorial_explain">Erklär es mir</string>
+    <string name="game_simonsays_wrong_retry">Ups — nochmal ansehen</string>
+    <string name="game_shape_star">Stern</string>
+    <string name="game_shape_square">Quadrat</string>
+    <string name="game_shape_circle">Kreis</string>
+    <string name="game_shape_heart">Herz</string>
+    <string name="game_steadiness_label">Ruhe</string>
+    <string name="game_lockpicking_too_much_motion">Zu viel Bewegung!</string>
+    <string name="game_lockpicking_stunned">Erwischt! Warte…</string>
+    <string name="game_lockpicking_turn_crown">Krone drehen!</string>
+    <string name="game_lockpicking_turn_crown_feel">Drehen — Kerbe erfühlen</string>
+    <string name="game_lockpicking_drag_dial_feel">Ziehen — Kerbe erfühlen</string>
+    <string name="game_lockpicking_hold_it">Halt es dort!</string>
+    <string name="game_trivia_wrong">Leider nicht!</string>
 </resources>

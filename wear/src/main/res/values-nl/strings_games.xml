@@ -7,32 +7,22 @@
 <resources>
     <!-- LockPickingGameActivity.kt:112 -->
     <string name="game_lockpicking_hold_still">Hou stil!</string>
-    <!-- LockPickingGameActivity.kt:229 -->
-    <string name="game_lockpicking_mistimed">Te vroeg/laat!</string>
     <!-- LockPickingGameActivity.kt:110 -->
     <string name="game_lockpicking_stage_indicator">Fase %1$d/%2$d</string>
     <!-- LockPickingGameActivity.kt:171 -->
-    <string name="game_lockpicking_swipe_circle">Veeg in een cirkel!</string>
-    <!-- LockPickingGameActivity.kt:235 -->
-    <string name="game_lockpicking_tap_button">TIK!</string>
-    <!-- LockPickingGameActivity.kt:218 -->
-    <string name="game_lockpicking_tap_green_zone">Tik in de groene zone!</string>
+    <string name="game_lockpicking_swipe_circle">Veeg in cirkels!</string>
     <!-- LockPickingGameActivity.kt:36 -->
     <string name="game_lockpicking_title">Slot kraken</string>
     <!-- LockPickingGameActivity.kt:38 -->
-    <string name="game_lockpicking_tutorial">Kraak het slot in 3 fasen: 1) hou je pols stil, 2) veeg in een cirkel om de wijzerplaat te draaien, 3) tik op de knop wanneer de bewegende stip in de groene zone is.</string>
+    <string name="game_lockpicking_tutorial">Drie fasen. 1) Hou je pols stil zodat de straal boven je hoofd blijft. 2) Draai de kroon (of veeg in cirkels) om het slot te bewerken. Stralen knipperen voor ze vallen — draai terug en wacht af. 3) Draai aan de knop om de kluis te kraken: dicht bij de inkeping trilt het sterker. Hou daar vast, drie keer.</string>
     <!-- LockPickingGameActivity.kt:226 -->
     <string name="game_result_perfect">Perfect!</string>
-    <!-- SimonSaysGameActivity.kt:108 -->
-    <string name="game_simonsays_good_watch">Goed! Kijk...</string>
     <!-- SimonSaysGameActivity.kt:21 -->
     <string name="game_simonsays_title">Simon Zegt</string>
     <!-- SimonSaysGameActivity.kt:23 -->
-    <string name="game_simonsays_tutorial">Kijk welke gekleurde vakjes oplichten en tik ze daarna in dezelfde volgorde na. Elke ronde wordt de reeks één stap langer — haal 4 rondes om te winnen!</string>
+    <string name="game_simonsays_tutorial">Elk kwart van het scherm heeft een kleur ÉN een vorm. Kijk welke oplichten en tik ze in dezelfde volgorde na. Elke ronde één stap langer — bij een fout speelt de ronde gewoon opnieuw.</string>
     <!-- SimonSaysGameActivity.kt:40 -->
     <string name="game_simonsays_watch_carefully">Kijk goed!</string>
-    <!-- SimonSaysGameActivity.kt:96 -->
-    <string name="game_simonsays_wrong_restarting">Fout! Opnieuw starten...</string>
     <!-- SimonSaysGameActivity.kt:65 -->
     <string name="game_simonsays_your_turn_round">Jouw beurt! Ronde %1$d/%2$d</string>
     <!-- StandStillGameActivity.kt:90 -->
@@ -44,19 +34,13 @@
     <!-- StandStillGameActivity.kt:26 -->
     <string name="game_standstill_title">Stilstaan</string>
     <!-- StandStillGameActivity.kt:28 -->
-    <string name="game_standstill_tutorial">Hou je arm helemaal stil tot de ring vol is. Als je beweegt, wordt de timer gereset en begin je opnieuw!</string>
-    <!-- TriviaGameActivity.kt:77 -->
-    <string name="game_trivia_answer_option">%1$s: %2$s</string>
+    <string name="game_standstill_tutorial">Hou je arm stil tot de ring vol is. De balk onderaan toont hoe dicht je bij te veel beweging zit — blijf links van de lijn.</string>
     <!-- TriviaGameActivity.kt:66 -->
     <string name="game_trivia_correct">Correct! ★</string>
     <!-- TriviaGameActivity.kt:25 -->
     <string name="game_trivia_title">Quiz</string>
     <!-- TriviaGameActivity.kt:27 -->
     <string name="game_trivia_tutorial">Lees de vraag en tik op het antwoord (A, B, C of D) dat volgens jou juist is.</string>
-    <!-- TriviaGameActivity.kt:70 -->
-    <string name="game_trivia_wrong_answer_was">Fout! Het juiste antwoord was: %1$s</string>
-    <!-- MicrogameActivity.kt:107 -->
-    <string name="microgame_tutorial_start_button">Start</string>
     <!-- MicrogameActivity.kt:49 -->
     <string name="microgame_tutorial_text_default">Volg de instructies op het scherm.</string>
     <!-- MicrogameActivity.kt:47 -->
@@ -123,4 +107,22 @@
     <string name="trivia_fallback_q8_question">Welk dier staat bekend als de beste vriend van de mens?</string>
     <!-- TriviaGameActivity.kt:107 -->
     <string name="trivia_fallback_q9_question">Hoeveel minuten zitten er in een uur?</string>
+
+    <!-- Rework: tutorial opt-in, colour-blind shape cues, rotary safe dial. -->
+    <string name="microgame_tutorial_ask_known">Weet je hoe dit werkt?</string>
+    <string name="microgame_tutorial_skip">Ja, we gaan</string>
+    <string name="microgame_tutorial_explain">Leg het uit</string>
+    <string name="game_simonsays_wrong_retry">Oeps — kijk opnieuw</string>
+    <string name="game_shape_star">Ster</string>
+    <string name="game_shape_square">Vierkant</string>
+    <string name="game_shape_circle">Cirkel</string>
+    <string name="game_shape_heart">Hart</string>
+    <string name="game_steadiness_label">Stabiliteit</string>
+    <string name="game_lockpicking_too_much_motion">Te veel beweging!</string>
+    <string name="game_lockpicking_stunned">Geraakt! Wacht…</string>
+    <string name="game_lockpicking_turn_crown">Draai de kroon!</string>
+    <string name="game_lockpicking_turn_crown_feel">Draaien — voel de inkeping</string>
+    <string name="game_lockpicking_drag_dial_feel">Slepen — voel de inkeping</string>
+    <string name="game_lockpicking_hold_it">Hou vast!</string>
+    <string name="game_trivia_wrong">Net niet!</string>
 </resources>

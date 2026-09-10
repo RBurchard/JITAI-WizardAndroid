@@ -27,4 +27,21 @@
     <string name="settings_force_end">Force End</string>
     <string name="settings_force_end_confirm">Close the app and stop tracking?</string>
 
+
+    <!-- ── Mini-game tuning + free play (ui/settings/SettingsScreen.kt) ─────── -->
+    <string name="settings_games">Mini-games</string>
+    <string name="settings_simon_speed">Simon speed</string>
+    <string name="settings_simon_rounds">Simon rounds</string>
+    <string name="settings_value_of">%1$d/%2$d</string>
+    <string name="settings_practice">Practice</string>
+    <string name="settings_practice_hint">Free play. Nothing is recorded.</string>
+
+
+    <!-- Lock-picking tuning: sensitivity/run length, and what a slip costs. -->
+    <string name="settings_lock_difficulty">Lock difficulty</string>
+    <string name="settings_lock_penalty">Mistake costs</string>
+    <string name="settings_lock_penalty_stun">Stun</string>
+    <string name="settings_lock_penalty_pushback">Push back</string>
+    <string name="settings_lock_penalty_reset">Restart stage</string>
+
 </resources>
