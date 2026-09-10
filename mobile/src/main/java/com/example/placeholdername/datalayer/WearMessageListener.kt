@@ -39,11 +39,16 @@ class WearMessageListener : WearableListenerService() {
             Protocol.PATH_INTERVENTION_RESPONSE -> handleResponse(String(event.data))
             Protocol.PATH_WATCH_DATA -> handleWatchData(String(event.data))
             Protocol.PATH_PONG -> handlePong(String(event.data))
+            Protocol.PATH_GAME_SETTINGS_ACK -> handleGameSettingsAck(String(event.data))
         }
     }
 
     override fun onPeerConnected(node: Node) {
         refreshConnection("peer_connected:${node.id}")
+        // A watch that was asleep or out of range missed every push made while it was gone.
+        // Re-pushing on reconnect is what stops it from quietly running the previous
+        // participant's difficulty for a whole session.
+        runCatching { (application as JITAIWizardApp).gameSettingsStore.pushCurrent("peer_connected") }
     }
 
     override fun onPeerDisconnected(node: Node) {
@@ -117,6 +122,18 @@ class WearMessageListener : WearableListenerService() {
                 Log.e("WearMessageListener", "Failed to parse watch data", e)
             }
         }
+    }
+
+    private fun handleGameSettingsAck(data: String) {
+        syncLogger.log(
+            eventType = "wear_receive",
+            value = "game_settings_ack",
+            path = Protocol.PATH_GAME_SETTINGS_ACK,
+            payloadBytes = data.toByteArray().size,
+            details = data
+        )
+        runCatching { (application as JITAIWizardApp).gameSettingsStore.onWatchAck(data) }
+        Log.d("WearMessageListener", "Settings ack: $data")
     }
 
     private fun handlePong(data: String) {

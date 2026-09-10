@@ -26,7 +26,7 @@ import com.example.jitaicompanion.convention.locale.LocaleController
  * [com.BWPStudio.JITAIWizard.ui.userview.UserViewScreen].
  */
 @Composable
-fun SettingsScreen(onBack: () -> Unit) {
+fun SettingsScreen(onBack: () -> Unit, onGameSettings: () -> Unit = {}) {
     val context = LocalContext.current
     val activity = context as? android.app.Activity
     var currentTag by remember { mutableStateOf(LocaleController.currentTag(context)) }
@@ -97,6 +97,34 @@ fun SettingsScreen(onBack: () -> Unit) {
                         }
                     )
                 }
+            }
+
+            Spacer(Modifier.height(24.dp))
+
+            Text(
+                stringResource(R.string.settings_watch_section),
+                color = Color(0xFF8899BB),
+                style = MaterialTheme.typography.labelLarge
+            )
+            Spacer(Modifier.height(12.dp))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color(0xFF1A2A3A), RoundedCornerShape(12.dp))
+                    .clickable(onClick = onGameSettings)
+                    .padding(horizontal = 16.dp, vertical = 14.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text(stringResource(R.string.game_settings_title), color = Color.White)
+                    Text(
+                        stringResource(R.string.game_settings_subtitle),
+                        color = Color.White.copy(alpha = 0.5f),
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+                Text("\u203A", color = Color(0xFF42A5F5), style = MaterialTheme.typography.titleLarge)
             }
 
             Spacer(Modifier.weight(1f))

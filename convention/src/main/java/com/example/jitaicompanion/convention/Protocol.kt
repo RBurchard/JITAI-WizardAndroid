@@ -7,6 +7,10 @@ object Protocol {
     const val PATH_PING = "/ping"
     const val PATH_PONG = "/pong"
     const val PATH_GAME_RESULT = "/game/result"
+    /** Phone -> watch: a MicrogameSettings JSON to apply. */
+    const val PATH_GAME_SETTINGS = "/game/settings"
+    /** Watch -> phone: acknowledgement carrying the settings the watch actually stored. */
+    const val PATH_GAME_SETTINGS_ACK = "/game/settings/ack"
     const val PATH_PHONE_TASK = "/phone/task"
     const val PATH_EXIT = "/exit"
     const val KEY_INTERVENTION = "intervention"

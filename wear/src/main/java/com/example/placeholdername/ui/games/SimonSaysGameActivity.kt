@@ -97,8 +97,9 @@ class SimonSaysGameActivity : MicrogameActivity() {
 
     @Composable
     override fun GameContent() {
-        val difficulty = remember { GameSettings.getSimonDifficulty(this) }
-        val totalRounds = remember { GameSettings.getSimonRounds(this) }
+        val settings = remember { GameSettings.load(this) }
+        val difficulty = settings.simonDifficulty
+        val totalRounds = settings.simonRounds
         val flashMs = remember(difficulty) { GameSettings.simonFlashMillis(difficulty) }
         val gapMs = remember(difficulty) { GameSettings.simonGapMillis(difficulty) }
 

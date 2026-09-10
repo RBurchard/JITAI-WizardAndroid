@@ -1,16 +1,24 @@
 package com.example.jitaicompanion.ui.games
 
 import android.content.Context
+import com.example.jitaicompanion.convention.models.LockPenalty
+import com.example.jitaicompanion.convention.models.MicrogameSettings
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 /**
- * Player-tunable microgame settings, persisted on the watch.
+ * The watch's copy of [MicrogameSettings], and the difficulty curves derived from it.
  *
- * These are deliberately watch-local (SharedPreferences, not synced over the Data Layer):
- * they change how the *presentation* of a game feels for one wearer — how fast Simon Says
- * flashes and how many rounds it runs — not what the study measures. A researcher setting a
- * participant up can dial them in on the wrist in a few seconds, and the participant can then
- * sit and practise while the phone side is still being configured (see
- * [SimonSaysGameActivity]'s practice mode).
+ * Storage is watch-local SharedPreferences, but the *value* is no longer watch-local: the phone
+ * pushes it over the Data Layer (see `WearMessageListener`), and loading an experiment schedule
+ * pushes that schedule's own settings. A researcher can still adjust it on the wrist, which is
+ * what the watch Settings screen edits; the next push from the phone wins, which is what keeps a
+ * participant's session consistent with the schedule loaded for them.
+ *
+ * The curves below (flash timings, motion limits, run length) live here rather than in the
+ * shared model because they are presentation detail this watch build owns. Only the 1..5 dial
+ * positions have to mean the same thing on both devices.
  */
 object GameSettings {
 
@@ -20,60 +28,79 @@ object GameSettings {
     private const val KEY_LOCK_DIFFICULTY = "lock_difficulty"
     private const val KEY_LOCK_PENALTY = "lock_penalty"
 
-    /** Difficulty steps offered by the settings slider. */
-    const val MIN_DIFFICULTY = 1
-    const val MAX_DIFFICULTY = 5
-    const val DEFAULT_DIFFICULTY = 2
+    const val MIN_DIFFICULTY = MicrogameSettings.MIN_DIFFICULTY
+    const val MAX_DIFFICULTY = MicrogameSettings.MAX_DIFFICULTY
+    const val MIN_ROUNDS = MicrogameSettings.MIN_ROUNDS
+    const val MAX_ROUNDS = MicrogameSettings.MAX_ROUNDS
 
-    /** Round-count steps offered by the settings slider. */
-    const val MIN_ROUNDS = 2
-    const val MAX_ROUNDS = 8
-    const val DEFAULT_ROUNDS = 4
+    private val _current = MutableStateFlow(MicrogameSettings())
 
-    /** Lock-picking difficulty steps. Shares the 1..5 range with Simon for a consistent UI. */
-    const val DEFAULT_LOCK_DIFFICULTY = 2
+    /**
+     * Live settings, so a Settings screen left open while the phone pushes an update redraws
+     * instead of showing a value the games are no longer using.
+     */
+    val current: StateFlow<MicrogameSettings> = _current.asStateFlow()
 
     private fun prefs(context: Context) =
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
-    fun getSimonDifficulty(context: Context): Int =
-        prefs(context).getInt(KEY_SIMON_DIFFICULTY, DEFAULT_DIFFICULTY)
-            .coerceIn(MIN_DIFFICULTY, MAX_DIFFICULTY)
+    /** Reads the stored settings, refreshing [current] as a side effect. */
+    fun load(context: Context): MicrogameSettings {
+        val p = prefs(context)
+        val loaded = MicrogameSettings(
+            simonDifficulty = p.getInt(KEY_SIMON_DIFFICULTY, MicrogameSettings.DEFAULT_SIMON_DIFFICULTY),
+            simonRounds = p.getInt(KEY_SIMON_ROUNDS, MicrogameSettings.DEFAULT_SIMON_ROUNDS),
+            lockDifficulty = p.getInt(KEY_LOCK_DIFFICULTY, MicrogameSettings.DEFAULT_LOCK_DIFFICULTY),
+            lockPenalty = LockPenalty.fromName(p.getString(KEY_LOCK_PENALTY, null)),
+        ).sanitized()
+        _current.value = loaded
+        return loaded
+    }
 
-    fun setSimonDifficulty(context: Context, value: Int) {
+    /** Writes [settings] (clamped) and publishes them to [current]. */
+    fun save(context: Context, settings: MicrogameSettings): MicrogameSettings {
+        val clean = settings.sanitized()
         prefs(context).edit()
-            .putInt(KEY_SIMON_DIFFICULTY, value.coerceIn(MIN_DIFFICULTY, MAX_DIFFICULTY))
+            .putInt(KEY_SIMON_DIFFICULTY, clean.simonDifficulty)
+            .putInt(KEY_SIMON_ROUNDS, clean.simonRounds)
+            .putInt(KEY_LOCK_DIFFICULTY, clean.lockDifficulty)
+            .putString(KEY_LOCK_PENALTY, clean.lockPenalty.name)
             .apply()
+        _current.value = clean
+        return clean
     }
 
-    fun getSimonRounds(context: Context): Int =
-        prefs(context).getInt(KEY_SIMON_ROUNDS, DEFAULT_ROUNDS)
-            .coerceIn(MIN_ROUNDS, MAX_ROUNDS)
+    /** Applies one edit on top of whatever is stored. */
+    fun update(context: Context, transform: (MicrogameSettings) -> MicrogameSettings): MicrogameSettings =
+        save(context, transform(load(context)))
 
-    fun setSimonRounds(context: Context, value: Int) {
-        prefs(context).edit()
-            .putInt(KEY_SIMON_ROUNDS, value.coerceIn(MIN_ROUNDS, MAX_ROUNDS))
-            .apply()
+    // ── Simon Says curves ────────────────────────────────────────────────────
+
+    /**
+     * Timing for one Simon Says flash at [difficulty].
+     *
+     * Difficulty only compresses the show phase — it never shortens the *input* window — so a
+     * higher setting tests recall speed rather than punishing slow tapping, which would make
+     * the game harder for exactly the motor-impaired users the rework is meant to help.
+     */
+    fun simonFlashMillis(difficulty: Int): Long = when (difficulty.coerceIn(MIN_DIFFICULTY, MAX_DIFFICULTY)) {
+        1 -> 800L
+        2 -> 620L
+        3 -> 480L
+        4 -> 380L
+        else -> 300L
     }
 
-    fun getLockDifficulty(context: Context): Int =
-        prefs(context).getInt(KEY_LOCK_DIFFICULTY, DEFAULT_LOCK_DIFFICULTY)
-            .coerceIn(MIN_DIFFICULTY, MAX_DIFFICULTY)
-
-    fun setLockDifficulty(context: Context, value: Int) {
-        prefs(context).edit()
-            .putInt(KEY_LOCK_DIFFICULTY, value.coerceIn(MIN_DIFFICULTY, MAX_DIFFICULTY))
-            .apply()
+    /** Dark gap between two flashes at [difficulty]. Never 0 — a repeated colour must read as two taps. */
+    fun simonGapMillis(difficulty: Int): Long = when (difficulty.coerceIn(MIN_DIFFICULTY, MAX_DIFFICULTY)) {
+        1 -> 420L
+        2 -> 320L
+        3 -> 240L
+        4 -> 180L
+        else -> 140L
     }
 
-    fun getLockPenalty(context: Context): LockPenalty =
-        LockPenalty.fromName(prefs(context).getString(KEY_LOCK_PENALTY, null))
-
-    fun setLockPenalty(context: Context, value: LockPenalty) {
-        prefs(context).edit().putString(KEY_LOCK_PENALTY, value.name).apply()
-    }
-
-    // ── Lock picking, stage 1: how still is still enough ──────────────────────
+    // ── Lock picking, stage 1: how still is still enough ─────────────────────
 
     /**
      * Fraction of the steadiness meter above which the alarm trips, at [difficulty].
@@ -99,7 +126,7 @@ object GameSettings {
         else -> 10f
     }
 
-    // ── Lock picking, stage 2: how long the corridor is ───────────────────────
+    // ── Lock picking, stage 2: how long the corridor is ──────────────────────
 
     /**
      * Length of the stage-2 corridor in screen-widths, at [difficulty].
@@ -118,53 +145,4 @@ object GameSettings {
     /** Number of guillotine beams on the stage-2 run, at [difficulty]. */
     fun lockBeamCount(difficulty: Int): Int =
         difficulty.coerceIn(MIN_DIFFICULTY, MAX_DIFFICULTY) + 1
-
-    /**
-     * Timing for one Simon Says flash at [difficulty].
-     *
-     * Difficulty only compresses the show phase — it never shortens the *input* window — so a
-     * higher setting tests recall speed rather than punishing slow tapping, which would make
-     * the game harder for exactly the motor-impaired users the rework is meant to help.
-     */
-    fun simonFlashMillis(difficulty: Int): Long = when (difficulty.coerceIn(MIN_DIFFICULTY, MAX_DIFFICULTY)) {
-        1 -> 800L
-        2 -> 620L
-        3 -> 480L
-        4 -> 380L
-        else -> 300L
-    }
-
-    /** Dark gap between two flashes at [difficulty]. Never 0 — a repeated colour must read as two taps. */
-    fun simonGapMillis(difficulty: Int): Long = when (difficulty.coerceIn(MIN_DIFFICULTY, MAX_DIFFICULTY)) {
-        1 -> 420L
-        2 -> 320L
-        3 -> 240L
-        4 -> 180L
-        else -> 140L
-    }
-}
-
-/**
- * What a lock-picking mistake costs, in ascending severity.
- *
- * Split out from the difficulty slider because severity and sensitivity are independent knobs:
- * a participant with a tremor may need a forgiving *threshold* but still benefit from a real
- * consequence, while a study arm testing frustration may want the opposite.
- */
-enum class LockPenalty {
-    /** Progress freezes for a moment. Nothing is lost. */
-    STUN,
-
-    /** Progress freezes and slides back a little. */
-    PUSHBACK,
-
-    /** The stage starts over. */
-    RESET;
-
-    companion object {
-        val DEFAULT = STUN
-
-        fun fromName(name: String?): LockPenalty =
-            entries.firstOrNull { it.name == name } ?: DEFAULT
-    }
 }

@@ -31,4 +31,28 @@
     <string name="settings_about">Over</string>
     <string name="settings_version">Versie %1$s</string>
 
+
+    <!-- Watch mini-game difficulty, edited from the phone (ui/settings/GameSettingsScreen.kt). -->
+    <string name="settings_watch_section">Horloge</string>
+    <string name="game_settings_title">Minigame-moeilijkheid</string>
+    <string name="game_settings_subtitle">Stel de horlogegames in voor deze deelnemer</string>
+    <string name="game_settings_scope">Opgeslagen in schema: %1$s</string>
+    <string name="game_settings_footer">Deze instellingen worden bij het experimentschema bewaard, naar het horloge gestuurd en vastgelegd in het sessielog en de CSV-export.</string>
+    <string name="game_settings_watch_in_sync">Horloge is synchroon</string>
+    <string name="game_settings_watch_out_of_sync">Horloge heeft dit nog niet bevestigd</string>
+    <string name="game_settings_watch_never_acked">Nog geen bevestiging van het horloge</string>
+    <string name="game_settings_resend">Opnieuw sturen</string>
+    <string name="game_simonsays_title">Simon Zegt</string>
+    <string name="game_lockpicking_title">Slot kraken</string>
+    <string name="settings_simon_speed">Tempo</string>
+    <string name="settings_simon_speed_description">Hoe snel de reeks oplicht. De tijd om na te tikken wordt nooit korter.</string>
+    <string name="settings_simon_rounds">Rondes</string>
+    <string name="settings_simon_rounds_description">Hoeveel rondes gehaald moeten worden.</string>
+    <string name="settings_lock_difficulty">Moeilijkheid</string>
+    <string name="settings_lock_difficulty_description">Hoe stil de pols moet blijven en hoe lang de stralengang is.</string>
+    <string name="settings_lock_penalty">Straf bij fout</string>
+    <string name="settings_lock_penalty_description">Wat er gebeurt als het alarm afgaat of een straal raakt.</string>
+    <string name="settings_lock_penalty_stun">Verdoven (geen verlies)</string>
+    <string name="settings_lock_penalty_pushback">Terugzetten</string>
+    <string name="settings_lock_penalty_reset">Fase opnieuw starten</string>
 </resources>

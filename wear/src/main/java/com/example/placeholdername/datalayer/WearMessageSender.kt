@@ -69,4 +69,11 @@ class WearMessageSender(private val context: Context) {
             sendToNodes(Protocol.PATH_PONG, message.toByteArray(), "pong")
         }
     }
+
+    /** Echoes the microgame settings the watch actually stored back to the phone. */
+    fun sendGameSettingsAck(settingsJson: String) {
+        CoroutineScope(Dispatchers.IO).launch {
+            sendToNodes(Protocol.PATH_GAME_SETTINGS_ACK, settingsJson.toByteArray(), "settings ack")
+        }
+    }
 }

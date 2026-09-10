@@ -15,6 +15,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -37,7 +39,7 @@ import android.content.Intent
 import com.example.jitaicompanion.convention.locale.AppLanguages
 import com.example.jitaicompanion.convention.locale.LocaleController
 import com.example.jitaicompanion.ui.games.GameSettings
-import com.example.jitaicompanion.ui.games.LockPenalty
+import com.example.jitaicompanion.convention.models.LockPenalty
 import com.example.jitaicompanion.ui.games.LockPickingGameActivity
 import com.example.jitaicompanion.ui.games.MicrogameActivity
 import com.example.jitaicompanion.ui.games.SimonSaysGameActivity
@@ -131,10 +133,11 @@ fun SettingsScreen(onBack: () -> Unit, onForceEnd: () -> Unit) {
  */
 @Composable
 private fun GameSection(context: Context, dimens: com.example.jitaicompanion.ui.layout.WearDimens) {
-    var difficulty by remember { mutableIntStateOf(GameSettings.getSimonDifficulty(context)) }
-    var rounds by remember { mutableIntStateOf(GameSettings.getSimonRounds(context)) }
-    var lockDifficulty by remember { mutableIntStateOf(GameSettings.getLockDifficulty(context)) }
-    var lockPenalty by remember { mutableStateOf(GameSettings.getLockPenalty(context)) }
+    // Collected, not snapshotted: the phone can push a new schedule's settings while this
+    // screen is open, and showing a stale slider would make the two devices look out of sync
+    // when they are not.
+    LaunchedEffect(Unit) { GameSettings.load(context) }
+    val settings by GameSettings.current.collectAsState()
 
     Text(
         stringResource(R.string.settings_games),
@@ -145,35 +148,32 @@ private fun GameSection(context: Context, dimens: com.example.jitaicompanion.ui.
 
     SettingSlider(
         label = stringResource(R.string.settings_simon_speed),
-        value = difficulty,
+        value = settings.simonDifficulty,
         min = GameSettings.MIN_DIFFICULTY,
         max = GameSettings.MAX_DIFFICULTY,
-        valueLabel = stringResource(R.string.settings_value_of, difficulty, GameSettings.MAX_DIFFICULTY),
-    ) {
-        difficulty = it
-        GameSettings.setSimonDifficulty(context, it)
+        valueLabel = stringResource(R.string.settings_value_of, settings.simonDifficulty, GameSettings.MAX_DIFFICULTY),
+    ) { value ->
+        GameSettings.update(context) { it.copy(simonDifficulty = value) }
     }
 
     SettingSlider(
         label = stringResource(R.string.settings_simon_rounds),
-        value = rounds,
+        value = settings.simonRounds,
         min = GameSettings.MIN_ROUNDS,
         max = GameSettings.MAX_ROUNDS,
-        valueLabel = "$rounds",
-    ) {
-        rounds = it
-        GameSettings.setSimonRounds(context, it)
+        valueLabel = "${settings.simonRounds}",
+    ) { value ->
+        GameSettings.update(context) { it.copy(simonRounds = value) }
     }
 
     SettingSlider(
         label = stringResource(R.string.settings_lock_difficulty),
-        value = lockDifficulty,
+        value = settings.lockDifficulty,
         min = GameSettings.MIN_DIFFICULTY,
         max = GameSettings.MAX_DIFFICULTY,
-        valueLabel = stringResource(R.string.settings_value_of, lockDifficulty, GameSettings.MAX_DIFFICULTY),
-    ) {
-        lockDifficulty = it
-        GameSettings.setLockDifficulty(context, it)
+        valueLabel = stringResource(R.string.settings_value_of, settings.lockDifficulty, GameSettings.MAX_DIFFICULTY),
+    ) { value ->
+        GameSettings.update(context) { it.copy(lockDifficulty = value) }
     }
 
     Spacer(Modifier.height(dimens.itemSpacing))
@@ -193,11 +193,10 @@ private fun GameSection(context: Context, dimens: com.example.jitaicompanion.ui.
                     LockPenalty.RESET -> R.string.settings_lock_penalty_reset
                 }
             ),
-            selected = lockPenalty == option,
+            selected = settings.lockPenalty == option,
             dimens = dimens
         ) {
-            lockPenalty = option
-            GameSettings.setLockPenalty(context, option)
+            GameSettings.update(context) { it.copy(lockPenalty = option) }
         }
     }
 

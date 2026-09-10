@@ -6,8 +6,11 @@ import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
 import android.util.Log
+import com.BWPStudio.JITAIWizard.JITAIWizardApp
 import com.BWPStudio.JITAIWizard.datalayer.WatchDataRelay
 import com.BWPStudio.JITAIWizard.server.ServerState
+import com.BWPStudio.JITAIWizard.settings.GameSettingsStore
+import com.example.jitaicompanion.convention.models.MicrogameSettings
 import com.example.jitaicompanion.convention.models.SessionLogEntry
 import com.example.jitaicompanion.convention.models.WatchDataSnapshot
 import kotlinx.coroutines.CoroutineScope
@@ -70,6 +73,9 @@ class PhoneCsvLogger(context: Context) {
     private var labelCsv = ""
     private var keyCsv = ""
     private var startedAt = 0L
+    // Captured at start() and refreshed at finalize: the export has to state the settings the
+    // run was played at, which is not necessarily what is loaded by the time someone exports.
+    private var finalSettings = MicrogameSettings()
 
     companion object {
         const val EXPORT_DIR = "JITAI_WIZARD_csv"
@@ -91,6 +97,9 @@ class PhoneCsvLogger(context: Context) {
     fun start(experimentName: String, participantName: String) {
         synchronized(lock) {
             if (active) return
+            finalSettings = runCatching {
+                (appContext as? JITAIWizardApp)?.gameSettingsStore?.settings?.value
+            }.getOrNull() ?: MicrogameSettings()
             this.experimentName = experimentName.ifBlank { "defaultExperiment" }
             this.participantName = participantName.ifBlank { "defaultParticipant" }
             this.labelCsv = esc(this.participantName)
@@ -143,6 +152,10 @@ class PhoneCsvLogger(context: Context) {
         collectJob?.cancel(); collectJob = null
         if (ownsRunId && SessionLogStore.currentRunId == runId) SessionLogStore.currentRunId = null
 
+        finalSettings = runCatching {
+            (appContext as? JITAIWizardApp)?.gameSettingsStore?.settings?.value
+        }.getOrNull() ?: finalSettings
+
         val path = runCatching { assembleAndWrite() }
             .onFailure { Log.e("PhoneCsvLogger", "CSV assembly failed", it) }
             .getOrNull()
@@ -165,6 +178,7 @@ class PhoneCsvLogger(context: Context) {
 
         target.stream.bufferedWriter().use { w ->
             writeSession(w, sessionNote, logs.size)
+            writeGameSettings(w, logs)
             writeWatchData(w)
             writeSessionLogs(w, logs)
             writeInterventions(w, interventions)
@@ -201,6 +215,40 @@ class PhoneCsvLogger(context: Context) {
             .mapNotNull { runCatching { json.parseToJsonElement(it.payloadJson).jsonObject }.getOrNull()?.str("value") }
             .filter { it.isNotBlank() }
             .joinToString("\n")
+
+    /**
+     * The microgame difficulty the participant actually faced.
+     *
+     * Two sections' worth of information in one: the `final` row is the settings in force at
+     * export time, and the `change` rows are every adjustment during the run, in order, with the
+     * origin that caused it. Without the history a mid-session tweak would be invisible in the
+     * export, and a run's game results could not be attributed to the difficulty they were
+     * played at.
+     *
+     * Read back out of the session log rather than from live state so the export reflects the
+     * run being exported, not whatever the phone happens to hold now.
+     */
+    private fun writeGameSettings(w: Writer, logs: List<SessionLogEntry>) {
+        w.write("=== MINIGAME SETTINGS ===\n")
+        w.write("participant_label,scope,ts,origin,simon_difficulty,simon_rounds,lock_difficulty,lock_penalty\n")
+
+        val changes = logs.filter { it.kind == GameSettingsStore.LOG_KIND }
+        for (e in changes) {
+            val obj = runCatching { json.parseToJsonElement(e.payloadJson).jsonObject }.getOrNull()
+            w.write(
+                "$labelCsv,change,${e.ts},${esc(obj?.str("origin") ?: "")}," +
+                    "${obj?.str("simon_difficulty") ?: ""},${obj?.str("simon_rounds") ?: ""}," +
+                    "${obj?.str("lock_difficulty") ?: ""},${esc(obj?.str("lock_penalty") ?: "")}\n"
+            )
+        }
+
+        val f = finalSettings
+        w.write(
+            "$labelCsv,final,${System.currentTimeMillis()},," +
+                "${f.simonDifficulty},${f.simonRounds},${f.lockDifficulty},${esc(f.lockPenalty.name)}\n"
+        )
+        w.write("\n")
+    }
 
     private fun writeWatchData(w: Writer) {
         w.write("=== WATCH DATA ===\n")
@@ -278,6 +326,7 @@ class PhoneCsvLogger(context: Context) {
         return result
     }
 
+    /** Reads a field as text whether it was written as a JSON string or a number. */
     private fun JsonObject.str(key: String): String? = this[key]?.jsonPrimitive?.contentOrNull
     private fun JsonObject.long(key: String): Long? = this[key]?.jsonPrimitive?.longOrNull
 

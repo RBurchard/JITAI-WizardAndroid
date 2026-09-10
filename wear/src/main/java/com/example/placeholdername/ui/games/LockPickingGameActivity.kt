@@ -43,6 +43,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.Text
 import com.example.jitaicompanion.R
+import com.example.jitaicompanion.convention.models.LockPenalty
 import com.example.jitaicompanion.ui.layout.sdp
 import com.example.jitaicompanion.ui.layout.ssp
 import com.example.jitaicompanion.ui.layout.wearDimens
@@ -157,10 +158,12 @@ class LockPickingGameActivity : MicrogameActivity(), SensorEventListener {
 
     @Composable
     private fun StageCreep(onComplete: () -> Unit) {
-        val difficulty = remember { GameSettings.getLockDifficulty(this) }
-        val penalty = remember { GameSettings.getLockPenalty(this) }
-        val motionLimit = remember(difficulty) { GameSettings.lockMotionLimit(difficulty) }
-        val creepSeconds = remember(difficulty) { GameSettings.lockCreepSeconds(difficulty) }
+        // Snapshotted once per stage rather than collected: a settings push that lands
+        // mid-round must not change the rules under the player's hands halfway through.
+        val settings = remember { GameSettings.load(this) }
+        val penalty = settings.lockPenalty
+        val motionLimit = remember(settings) { GameSettings.lockMotionLimit(settings.lockDifficulty) }
+        val creepSeconds = remember(settings) { GameSettings.lockCreepSeconds(settings.lockDifficulty) }
 
         var progress by remember { mutableFloatStateOf(0f) }
         var motion by remember { mutableFloatStateOf(0f) }
@@ -291,8 +294,9 @@ class LockPickingGameActivity : MicrogameActivity(), SensorEventListener {
 
     @Composable
     private fun StageCorridor(onComplete: () -> Unit) {
-        val difficulty = remember { GameSettings.getLockDifficulty(this) }
-        val penalty = remember { GameSettings.getLockPenalty(this) }
+        val settings = remember { GameSettings.load(this) }
+        val penalty = settings.lockPenalty
+        val difficulty = settings.lockDifficulty
         val screens = remember(difficulty) { GameSettings.lockRunScreens(difficulty) }
 
         val beams = remember(difficulty) {

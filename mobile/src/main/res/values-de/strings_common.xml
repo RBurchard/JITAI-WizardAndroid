@@ -31,4 +31,28 @@
     <string name="settings_about">Info</string>
     <string name="settings_version">Version %1$s</string>
 
+
+    <!-- Watch mini-game difficulty, edited from the phone (ui/settings/GameSettingsScreen.kt). -->
+    <string name="settings_watch_section">Uhr</string>
+    <string name="game_settings_title">Minispiel-Schwierigkeit</string>
+    <string name="game_settings_subtitle">Uhr-Spiele für diese Person einstellen</string>
+    <string name="game_settings_scope">Im Ablauf gespeichert: %1$s</string>
+    <string name="game_settings_footer">Diese Einstellungen werden im Experiment-Ablauf gespeichert, an die Uhr gesendet und im Sitzungsprotokoll sowie im CSV-Export festgehalten.</string>
+    <string name="game_settings_watch_in_sync">Uhr ist synchron</string>
+    <string name="game_settings_watch_out_of_sync">Uhr hat noch nicht bestätigt</string>
+    <string name="game_settings_watch_never_acked">Noch keine Bestätigung von der Uhr</string>
+    <string name="game_settings_resend">Erneut senden</string>
+    <string name="game_simonsays_title">Simon sagt</string>
+    <string name="game_lockpicking_title">Schlossknacken</string>
+    <string name="settings_simon_speed">Tempo</string>
+    <string name="settings_simon_speed_description">Wie schnell die Folge aufleuchtet. Die Zeit zum Nachtippen wird nie kürzer.</string>
+    <string name="settings_simon_rounds">Runden</string>
+    <string name="settings_simon_rounds_description">Wie viele Runden geschafft werden müssen.</string>
+    <string name="settings_lock_difficulty">Schwierigkeit</string>
+    <string name="settings_lock_difficulty_description">Wie still das Handgelenk bleiben muss und wie lang der Strahlengang ist.</string>
+    <string name="settings_lock_penalty">Strafe bei Fehler</string>
+    <string name="settings_lock_penalty_description">Was passiert, wenn der Alarm ausgelöst wird oder ein Strahl trifft.</string>
+    <string name="settings_lock_penalty_stun">Betäuben (kein Verlust)</string>
+    <string name="settings_lock_penalty_pushback">Zurückwerfen</string>
+    <string name="settings_lock_penalty_reset">Stufe neu starten</string>
 </resources>

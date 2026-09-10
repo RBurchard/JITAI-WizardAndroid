@@ -10,6 +10,7 @@ import com.BWPStudio.JITAIWizard.experiment.PhoneCsvLogger
 import com.BWPStudio.JITAIWizard.server.KtorServer
 import com.BWPStudio.JITAIWizard.server.ServerState
 import com.BWPStudio.JITAIWizard.server.UdpBeacon
+import com.BWPStudio.JITAIWizard.settings.GameSettingsStore
 import com.BWPStudio.JITAIWizard.settings.SettingsKeys
 import com.BWPStudio.JITAIWizard.settings.SettingsRepository
 import com.BWPStudio.JITAIWizard.triggers.TriggerEngine
@@ -32,6 +33,8 @@ class JITAIWizardApp : Application() {
         private set
     lateinit var experimentEngine: ExperimentEngine
         private set
+    lateinit var gameSettingsStore: GameSettingsStore
+        private set
     private lateinit var server: KtorServer
     private val beacon = UdpBeacon(this)
 
@@ -39,7 +42,13 @@ class JITAIWizardApp : Application() {
         super.onCreate()
         experimentStore = ExperimentStore(this)
         experimentEngine = ExperimentEngine(this, experimentStore)
+        gameSettingsStore = GameSettingsStore(this, experimentStore)
         TriggerEngine.setTriggers(experimentStore.active.value.triggers)
+
+        // The watch keeps its own copy across reboots, so it may be running whatever the last
+        // session left behind. Pushing the active experiment's settings at startup makes the
+        // pair agree before anyone opens a screen.
+        gameSettingsStore.pushCurrent("app_start")
 
         // Restore the last-known participant so GET /participant exposes it to the
         // ControlStation immediately, even before a session has been started.

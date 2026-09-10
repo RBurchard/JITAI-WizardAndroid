@@ -10,6 +10,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.BWPStudio.JITAIWizard.ui.debugview.DebugViewScreen
+import com.BWPStudio.JITAIWizard.ui.settings.GameSettingsScreen
 import com.BWPStudio.JITAIWizard.ui.settings.SettingsScreen
 import com.BWPStudio.JITAIWizard.ui.userview.UserViewScreen
 import com.example.jitaicompanion.convention.locale.LocaleController
@@ -18,6 +19,7 @@ private object Routes {
     const val USER = "user"
     const val DEBUG = "debug"
     const val SETTINGS = "settings"
+    const val GAME_SETTINGS = "game_settings"
 }
 
 class MainActivity : ComponentActivity() {
@@ -44,10 +46,19 @@ private fun AppNavHost() {
             )
         }
         composable(Routes.DEBUG) {
-            DebugViewScreen(onBack = { navController.popBackStack() })
+            DebugViewScreen(
+                onBack = { navController.popBackStack() },
+                onGameSettings = { navController.navigate(Routes.GAME_SETTINGS) }
+            )
         }
         composable(Routes.SETTINGS) {
-            SettingsScreen(onBack = { navController.popBackStack() })
+            SettingsScreen(
+                onBack = { navController.popBackStack() },
+                onGameSettings = { navController.navigate(Routes.GAME_SETTINGS) }
+            )
+        }
+        composable(Routes.GAME_SETTINGS) {
+            GameSettingsScreen(onBack = { navController.popBackStack() })
         }
     }
 }

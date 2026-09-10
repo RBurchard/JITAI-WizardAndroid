@@ -38,7 +38,7 @@ private fun forceEndApp(context: Context) {
 }
 
 @Composable
-fun DebugViewScreen(onBack: () -> Unit) {
+fun DebugViewScreen(onBack: () -> Unit, onGameSettings: () -> Unit = {}) {
     var selectedTab by remember { mutableStateOf(0) }
     val tabs = listOf(stringResource(R.string.debugview_tab_control), stringResource(R.string.debugview_tab_experiment))
     var wearErrorMessage by remember { mutableStateOf<String?>(null) }
@@ -70,6 +70,14 @@ fun DebugViewScreen(onBack: () -> Unit) {
                 Text(stringResource(R.string.debugview_banner_debug_mode), color = MaterialTheme.colorScheme.onErrorContainer,
                     style = MaterialTheme.typography.labelLarge)
                 Row(verticalAlignment = Alignment.CenterVertically) {
+                    // Sits in the banner rather than in a tab so it is reachable from both the
+                    // Control and Experiment tabs, which is where a wizard actually needs it.
+                    TextButton(onClick = onGameSettings) {
+                        Text(
+                            stringResource(R.string.game_settings_title),
+                            color = MaterialTheme.colorScheme.onErrorContainer
+                        )
+                    }
                     TextButton(onClick = { forceEndApp(context) }) {
                         Text(stringResource(R.string.debugview_button_force_end), color = MaterialTheme.colorScheme.error)
                     }

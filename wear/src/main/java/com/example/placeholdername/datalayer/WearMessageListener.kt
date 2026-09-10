@@ -10,9 +10,11 @@ import androidx.core.content.ContextCompat
 import com.example.jitaicompanion.R
 import com.example.jitaicompanion.convention.Protocol
 import com.example.jitaicompanion.convention.models.Intervention
+import com.example.jitaicompanion.convention.models.MicrogameSettings
 import com.example.jitaicompanion.convention.models.NotificationType
 import com.example.jitaicompanion.service.WatchDataService
 import com.example.jitaicompanion.ui.InterventionActivity
+import com.example.jitaicompanion.ui.games.GameSettings
 import com.example.jitaicompanion.ui.games.MicrogameActivity
 import com.google.android.gms.wearable.MessageEvent
 import com.google.android.gms.wearable.WearableListenerService
@@ -32,6 +34,7 @@ class WearMessageListener : WearableListenerService() {
             Protocol.PATH_PHONE_TASK -> showCheckPhoneScreen()
             Protocol.PATH_PING -> handlePing(String(event.data))
             Protocol.PATH_EXIT -> handleExit()
+            Protocol.PATH_GAME_SETTINGS -> handleGameSettings(String(event.data))
         }
     }
 
@@ -89,6 +92,25 @@ class WearMessageListener : WearableListenerService() {
             startActivity(intent)
             Log.d("WearMessageListener", "Started InterventionActivity (gameType=${intervention.gameType})")
         }
+    }
+
+    /**
+     * Applies microgame settings pushed from the phone, then echoes back what was stored.
+     *
+     * The ack carries the *stored* value, not the received one, so the phone's status row
+     * reflects what the watch will actually play rather than what the phone hoped it sent. A
+     * value the watch had to clamp shows up as a mismatch instead of passing silently.
+     */
+    private fun handleGameSettings(data: String) {
+        val incoming = try {
+            json.decodeFromString<MicrogameSettings>(data)
+        } catch (e: Exception) {
+            Log.e("WearMessageListener", "Failed to parse microgame settings", e)
+            return
+        }
+        val stored = GameSettings.save(applicationContext, incoming)
+        Log.i("WearMessageListener", "Microgame settings applied: ${stored.summary()}")
+        sender.sendGameSettingsAck(json.encodeToString(stored))
     }
 
     private fun handleExit() {

@@ -194,6 +194,59 @@ class WearMessageSender(private val context: Context) {
         }
     }
 
+    /**
+     * Pushes microgame settings to every reachable watch.
+     *
+     * Deliberately silent on failure: this fires on app start, on every watch reconnect and on
+     * every schedule load, so surfacing a dialog each time the watch happens to be asleep would
+     * be noise. The watch's acknowledgement (and the in-sync indicator built on it) is how a
+     * researcher learns whether it landed.
+     */
+    fun sendGameSettings(settingsJson: String) {
+        CoroutineScope(Dispatchers.IO).launch {
+            val payload = settingsJson.toByteArray()
+            val nodes = try {
+                resolveNodes()
+            } catch (e: Exception) {
+                Log.w(TAG, "Settings push could not resolve nodes: ${e.message}")
+                return@launch
+            }
+            if (nodes.isEmpty()) {
+                syncLogger?.log(
+                    eventType = "wear_send",
+                    value = "game_settings_failed",
+                    path = Protocol.PATH_GAME_SETTINGS,
+                    payloadBytes = payload.size,
+                    details = "no_connected_node"
+                )
+                return@launch
+            }
+            nodes.forEach { node ->
+                try {
+                    messageClient.sendMessage(node.id, Protocol.PATH_GAME_SETTINGS, payload).await()
+                    syncLogger?.log(
+                        eventType = "wear_send",
+                        value = "game_settings_success",
+                        path = Protocol.PATH_GAME_SETTINGS,
+                        nodeId = node.id,
+                        payloadBytes = payload.size,
+                        details = settingsJson
+                    )
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to send game settings", e)
+                    syncLogger?.log(
+                        eventType = "wear_send",
+                        value = "game_settings_failed",
+                        path = Protocol.PATH_GAME_SETTINGS,
+                        nodeId = node.id,
+                        payloadBytes = payload.size,
+                        details = e.message ?: "unknown_error"
+                    )
+                }
+            }
+        }
+    }
+
     fun sendExit(onError: ((String) -> Unit)? = null) {
         CoroutineScope(Dispatchers.IO).launch {
             val nodes = try {

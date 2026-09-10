@@ -31,4 +31,28 @@
     <string name="settings_about">About</string>
     <string name="settings_version">Version %1$s</string>
 
+
+    <!-- Watch mini-game difficulty, edited from the phone (ui/settings/GameSettingsScreen.kt). -->
+    <string name="settings_watch_section">Watch</string>
+    <string name="game_settings_title">Mini-game difficulty</string>
+    <string name="game_settings_subtitle">Set the watch games up for this participant</string>
+    <string name="game_settings_scope">Stored in schedule: %1$s</string>
+    <string name="game_settings_footer">These settings are saved with the experiment schedule, pushed to the watch, and recorded in the session log and CSV export.</string>
+    <string name="game_settings_watch_in_sync">Watch is in sync</string>
+    <string name="game_settings_watch_out_of_sync">Watch has not confirmed these</string>
+    <string name="game_settings_watch_never_acked">No confirmation from the watch yet</string>
+    <string name="game_settings_resend">Resend</string>
+    <string name="game_simonsays_title">Simon Says</string>
+    <string name="game_lockpicking_title">Lock Picking</string>
+    <string name="settings_simon_speed">Speed</string>
+    <string name="settings_simon_speed_description">How fast the sequence flashes. The time to tap it back never shrinks.</string>
+    <string name="settings_simon_rounds">Rounds</string>
+    <string name="settings_simon_rounds_description">How many rounds must be cleared to finish.</string>
+    <string name="settings_lock_difficulty">Difficulty</string>
+    <string name="settings_lock_difficulty_description">How still the wrist must be held, and how long the beam corridor runs.</string>
+    <string name="settings_lock_penalty">Mistake costs</string>
+    <string name="settings_lock_penalty_description">What happens when the alarm trips or a beam connects.</string>
+    <string name="settings_lock_penalty_stun">Stun (lose nothing)</string>
+    <string name="settings_lock_penalty_pushback">Push back</string>
+    <string name="settings_lock_penalty_reset">Restart the stage</string>
 </resources>
