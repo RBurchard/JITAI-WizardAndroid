@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <b>Latest release:</b> <a href="https://github.com/BloodWolfPlayer/JITAI-WizardAndroid/releases">v1.2.0</a> &middot; signed Phone APK + Wear OS APK
+  <b>Latest release:</b> <a href="https://github.com/RBurchard/JITAI-WizardAndroid/releases">v2.0.0</a> &middot; signed Phone APK + Wear OS APK
 </p>
 
 _A research-grade intervention delivery system for Wear OS and Android._
@@ -52,14 +52,14 @@ Both Android modules share the application ID `com.BWPStudio.JITAIWizard`, which
 
 ## Download & Install
 
-> Just want to run it? Grab the signed APKs from the [**Releases page**](https://github.com/BloodWolfPlayer/JITAI-WizardAndroid/releases) -- no build tools required.
+> Just want to run it? Grab the signed APKs from the [**Releases page**](https://github.com/RBurchard/JITAI-WizardAndroid/releases) -- no build tools required.
 
 Every release ships both APKs signed with the **same key**, so the Wearable Data Layer handshake works out of the box. Always install the phone and watch builds **from the same release**.
 
 | File | Install on | Minimum OS |
 |------|-----------|------------|
-| `JITAI-Wizard-Phone-v1.2.0.apk` | Android phone | Android 10 (API 29) |
-| `JITAI-Wizard-Watch-v1.2.0.apk` | Wear OS watch | Wear OS 4.0 (API 33) |
+| `JITAI-Wizard-Phone-v2.0.0.apk` | Android phone | Android 10 (API 29) |
+| `JITAI-Wizard-Watch-v2.0.0.apk` | Wear OS watch | Wear OS 4.0 (API 33) |
 
 1. On both devices, allow installs from your browser/file manager (**Settings → Apps → Install unknown apps**).
 2. Download and install the **Phone** APK on the Android phone.
@@ -67,7 +67,7 @@ Every release ships both APKs signed with the **same key**, so the Wearable Data
 4. Confirm the phone and watch are paired and signed in to the **same Google account** with Bluetooth on.
 5. Open the phone app -- the watch pairs automatically over the Wearable Data Layer.
 
-The Windows **Control Station** is released separately: [JITAI-WizardControlStation releases](https://github.com/BloodWolfPlayer/JITAI-WizardControlStation/releases).
+The Windows **Control Station** is released separately: [JITAI-WizardControlStation releases](https://github.com/RBurchard/JITAI-WizardControlStation/releases).
 
 Prefer to build from source? See [Building the Project](#building-the-project).
 
@@ -128,7 +128,7 @@ For ControlStation connectivity, the phone must be on the same local Wi-Fi netwo
 1. Clone the repository:
 
 ```
-git clone https://github.com/BloodWolfPlayer/JITAI-WizardAndroid.git
+git clone https://github.com/RBurchard/JITAI-WizardAndroid.git
 ```
 
 2. Open the project root in Android Studio. Wait for the Gradle sync to complete. All dependencies are downloaded automatically.
