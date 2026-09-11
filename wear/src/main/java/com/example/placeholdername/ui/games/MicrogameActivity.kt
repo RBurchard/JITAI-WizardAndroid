@@ -2,8 +2,11 @@ package com.example.jitaicompanion.ui.games
 
 import android.content.Intent
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.os.VibrationEffect
 import android.os.Vibrator
+import android.util.Log
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -56,6 +59,22 @@ abstract class MicrogameActivity : ComponentActivity() {
          * participant can play while the researcher is still setting the session up.
          */
         const val EXTRA_PRACTICE = "practice_mode"
+
+        /**
+         * How long a game may sit on screen before it is treated as abandoned.
+         *
+         * Every game screen holds FLAG_KEEP_SCREEN_ON, which on a watch means a game nobody
+         * finishes keeps the display lit until the battery is gone. The display is by a wide
+         * margin the most expensive thing on the device, so this is the one timeout that
+         * matters for battery.
+         *
+         * Set far above any honest playthrough on purpose. The longest configured run is lock
+         * picking at difficulty 5, around two minutes with mistakes, so five minutes cannot cut
+         * a participant off mid-game; it only closes a screen that was walked away from. The
+         * per-game [timeoutSeconds] values are a separate, tighter idea that nothing enforces
+         * yet, and enforcing them would risk ending real play.
+         */
+        private const val ABANDON_TIMEOUT_MS = 5 * 60 * 1000L
     }
 
     protected lateinit var sender: WearMessageSender
@@ -86,7 +105,18 @@ abstract class MicrogameActivity : ComponentActivity() {
         setTurnScreenOn(true)
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
+        // Counts the tutorial screens too: those hold the display on just as hard as the game
+        // does, and "walked away at the how-to-play screen" is the likeliest way to abandon one.
+        abandonHandler.postDelayed(abandonRunnable, ABANDON_TIMEOUT_MS)
+
         setContent { ProvideWearDimens { GameWithTutorial() } }
+    }
+
+    private val abandonHandler = Handler(Looper.getMainLooper())
+
+    private val abandonRunnable = Runnable {
+        Log.i("MicrogameActivity", "Game abandoned after ${ABANDON_TIMEOUT_MS / 1000}s, closing")
+        onGameFailed("TIMEOUT")
     }
 
     /**
@@ -217,6 +247,7 @@ abstract class MicrogameActivity : ComponentActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
+        abandonHandler.removeCallbacks(abandonRunnable)
         if (currentInstance === this) currentInstance = null
     }
 

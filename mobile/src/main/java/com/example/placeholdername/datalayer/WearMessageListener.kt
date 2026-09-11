@@ -48,7 +48,8 @@ class WearMessageListener : WearableListenerService() {
         // A watch that was asleep or out of range missed every push made while it was gone.
         // Re-pushing on reconnect is what stops it from quietly running the previous
         // participant's difficulty for a whole session.
-        runCatching { (application as JITAIWizardApp).gameSettingsStore.pushCurrent("peer_connected") }
+        runCatching { (application as JITAIWizardApp).gameSettingsStore.pushCurrent("peer_connected")
+        (applicationContext as? JITAIWizardApp)?.watchPowerSync?.pushCurrent("peer_connected") }
     }
 
     override fun onPeerDisconnected(node: Node) {

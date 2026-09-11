@@ -11,6 +11,13 @@ object Protocol {
     const val PATH_GAME_SETTINGS = "/game/settings"
     /** Watch -> phone: acknowledgement carrying the settings the watch actually stored. */
     const val PATH_GAME_SETTINGS_ACK = "/game/settings/ack"
+    /**
+     * Phone -> watch: "1" while a run is in progress, "0" when it is not.
+     *
+     * Repeated while running rather than sent once, so the watch can expire a stale claim
+     * instead of collecting at full rate forever after a phone crash. See WatchPowerPolicy.
+     */
+    const val PATH_SESSION_STATE = "/session/state"
     const val PATH_PHONE_TASK = "/phone/task"
     const val PATH_EXIT = "/exit"
     const val KEY_INTERVENTION = "intervention"

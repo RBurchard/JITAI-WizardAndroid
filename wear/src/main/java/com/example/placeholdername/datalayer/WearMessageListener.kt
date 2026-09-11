@@ -12,6 +12,7 @@ import com.example.jitaicompanion.convention.Protocol
 import com.example.jitaicompanion.convention.models.Intervention
 import com.example.jitaicompanion.convention.models.MicrogameSettings
 import com.example.jitaicompanion.convention.models.NotificationType
+import com.example.jitaicompanion.power.WatchPowerPolicy
 import com.example.jitaicompanion.service.WatchDataService
 import com.example.jitaicompanion.ui.InterventionActivity
 import com.example.jitaicompanion.ui.games.GameSettings
@@ -29,12 +30,16 @@ class WearMessageListener : WearableListenerService() {
 
     override fun onMessageReceived(event: MessageEvent) {
         ensureDataServiceRunning()
+        // Any message means someone is working with this watch, which is enough to keep it out
+        // of the idle profile for the next few minutes.
+        WatchPowerPolicy.onPhoneContact()
         when (event.path) {
             Protocol.PATH_INTERVENTION -> handleIntervention(String(event.data))
             Protocol.PATH_PHONE_TASK -> showCheckPhoneScreen()
             Protocol.PATH_PING -> handlePing(String(event.data))
             Protocol.PATH_EXIT -> handleExit()
             Protocol.PATH_GAME_SETTINGS -> handleGameSettings(String(event.data))
+            Protocol.PATH_SESSION_STATE -> handleSessionState(String(event.data))
         }
     }
 
@@ -111,6 +116,19 @@ class WearMessageListener : WearableListenerService() {
         val stored = GameSettings.save(applicationContext, incoming)
         Log.i("WearMessageListener", "Microgame settings applied: ${stored.summary()}")
         sender.sendGameSettingsAck(json.encodeToString(stored))
+    }
+
+    /**
+     * The phone's view of whether a run is in progress.
+     *
+     * The watch never infers this. A schedule can sit on a fifteen minute wait between events,
+     * and a watch that guessed "nothing has happened, I must be idle" would quietly stop
+     * recording in the middle of a condition.
+     */
+    private fun handleSessionState(data: String) {
+        val active = data.trim() == "1"
+        Log.d("WearMessageListener", "Session state from phone: active=$active")
+        WatchPowerPolicy.onSessionState(active)
     }
 
     private fun handleExit() {

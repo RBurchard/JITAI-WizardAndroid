@@ -247,6 +247,34 @@ class WearMessageSender(private val context: Context) {
         }
     }
 
+    /**
+     * Tells the watch whether a run is in progress, which is what lets it power its sensors
+     * down between sessions.
+     *
+     * Silent on failure and deliberately not logged to the sync logger: this repeats every
+     * minute while a run is on, and a row per minute would bury the events a researcher
+     * actually reads. A watch that misses it simply expires the claim and idles, which is the
+     * safe direction.
+     */
+    fun sendSessionState(active: Boolean) {
+        CoroutineScope(Dispatchers.IO).launch {
+            val payload = (if (active) "1" else "0").toByteArray()
+            val nodes = try {
+                resolveNodes()
+            } catch (e: Exception) {
+                Log.w(TAG, "Session state push could not resolve nodes: ${e.message}")
+                return@launch
+            }
+            nodes.forEach { node ->
+                try {
+                    messageClient.sendMessage(node.id, Protocol.PATH_SESSION_STATE, payload).await()
+                } catch (e: Exception) {
+                    Log.w(TAG, "Failed to send session state to ${node.id}: ${e.message}")
+                }
+            }
+        }
+    }
+
     fun sendExit(onError: ((String) -> Unit)? = null) {
         CoroutineScope(Dispatchers.IO).launch {
             val nodes = try {

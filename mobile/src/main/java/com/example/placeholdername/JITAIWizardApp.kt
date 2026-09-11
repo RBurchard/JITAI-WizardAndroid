@@ -10,6 +10,7 @@ import com.BWPStudio.JITAIWizard.experiment.PhoneCsvLogger
 import com.BWPStudio.JITAIWizard.server.KtorServer
 import com.BWPStudio.JITAIWizard.server.ServerState
 import com.BWPStudio.JITAIWizard.server.UdpBeacon
+import com.BWPStudio.JITAIWizard.datalayer.WatchPowerSync
 import com.BWPStudio.JITAIWizard.settings.GameSettingsStore
 import com.BWPStudio.JITAIWizard.settings.SettingsKeys
 import com.BWPStudio.JITAIWizard.settings.SettingsRepository
@@ -34,6 +35,7 @@ class JITAIWizardApp : Application() {
     lateinit var experimentEngine: ExperimentEngine
         private set
     lateinit var gameSettingsStore: GameSettingsStore
+    lateinit var watchPowerSync: WatchPowerSync
         private set
     private lateinit var server: KtorServer
     private val beacon = UdpBeacon(this)
@@ -49,6 +51,12 @@ class JITAIWizardApp : Application() {
         // session left behind. Pushing the active experiment's settings at startup makes the
         // pair agree before anyone opens a screen.
         gameSettingsStore.pushCurrent("app_start")
+
+        // Keeps the watch told whether a run is on, so it can drop its sensors and its Data
+        // Layer traffic to a trickle between sessions.
+        watchPowerSync = WatchPowerSync(this, experimentEngine)
+        watchPowerSync.start()
+        watchPowerSync.pushCurrent("app_start")
 
         // Restore the last-known participant so GET /participant exposes it to the
         // ControlStation immediately, even before a session has been started.

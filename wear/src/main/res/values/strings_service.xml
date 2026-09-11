@@ -43,6 +43,8 @@
     <string name="notif_channel_watch_data_name">Watch Data Collection</string>
     <!-- WatchDataService.kt:330 -->
     <string name="notif_watch_data_text">Collecting sensor data</string>
+    <!-- Shown while no session is running and nobody has used the watch for a few minutes. -->
+    <string name="notif_watch_data_text_idle">Idle, low power</string>
     <!-- MainTileService.kt:50 -->
     <string name="tile_main_placeholder_label">Tile</string>
 </resources>

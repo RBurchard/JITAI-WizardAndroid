@@ -54,6 +54,7 @@ import com.BWPStudio.JITAIWizard.experiment.EngineMode
 import com.BWPStudio.JITAIWizard.experiment.Event
 import com.BWPStudio.JITAIWizard.experiment.ExperimentStore
 import com.BWPStudio.JITAIWizard.experiment.LogEvent
+import com.BWPStudio.JITAIWizard.experiment.SessionState
 import com.BWPStudio.JITAIWizard.ui.components.StringOptionDropdown
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -242,11 +243,18 @@ fun ExperimentScreen(onWearError: (String) -> Unit = {}) {
                             running = !running
                             if (running) {
                                 if (list.isEmpty()) { Toast.makeText(context, context.getString(R.string.experiment_toast_no_events), Toast.LENGTH_SHORT).show(); running = false; return@Button }
+                                // Announced after the guard above, not before it: a start that
+                                // bails out on an empty schedule must not leave the watch
+                                // believing a run is under way. SessionState is the single
+                                // answer to "is a run on", across the manual controls and the
+                                // engine both, and the watch powers its sensors by it.
+                                SessionState.setManualRun(true)
                                 eventToHighlight = list[0]
                                 logger.createLogFile(experiment, participantId, LocalDateTime.now().format(formatter), saveLogsBool)
                                 logger.log(LogEvent(eventType = "Experiment", value = "start"))
                                 startCsvExport()
                             } else {
+                                SessionState.setManualRun(false)
                                 eventToHighlight = null
                                 logger.log(LogEvent(eventType = "Experiment", value = "stop"))
                                 finalizeCsvExport()
@@ -539,6 +547,7 @@ fun ExperimentScreen(onWearError: (String) -> Unit = {}) {
                                     } else {
                                         Toast.makeText(context, context.getString(R.string.experiment_toast_finished), Toast.LENGTH_SHORT).show()
                                         eventToHighlight = null; running = false
+                                        SessionState.setManualRun(false)
                                         logger.log(LogEvent(eventType = "Experiment", value = "finished"))
                                         finalizeCsvExport()
                                     }
