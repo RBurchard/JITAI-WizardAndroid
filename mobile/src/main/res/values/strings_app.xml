@@ -12,6 +12,7 @@
     <string name="wear_error_no_watch_found">No WearOS can be found to send the message to! Make sure one is connected to the device and Bluetooth + Internet is on!</string>
     <!-- WearMessageSender.kt:189 -->
     <string name="wear_error_ping_failed">Failed to ping any connected node</string>
+    <string name="wear_error_wake_failed">Failed to send the wake request to the watch</string>
     <!-- WearMessageSender.kt:68 -->
     <string name="wear_error_reach_watch">Failed to reach watch: %1$s</string>
     <!-- WearMessageSender.kt:219 -->

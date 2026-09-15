@@ -39,6 +39,7 @@ import com.BWPStudio.JITAIWizard.experiment.EngineStatus
 import com.BWPStudio.JITAIWizard.server.ServerState
 import com.BWPStudio.JITAIWizard.triggers.ManualTriggerSource
 import com.BWPStudio.JITAIWizard.ui.theme.JitaiColors
+import com.example.jitaicompanion.convention.Protocol
 import com.google.android.gms.wearable.Node
 import com.google.android.gms.wearable.Wearable
 import kotlinx.coroutines.delay
@@ -212,6 +213,10 @@ private fun WatchStatusCard(onWearError: (String) -> Unit = {}) {
     var pingState by remember { mutableStateOf(PingState.IDLE) }
     var bpm by remember { mutableFloatStateOf(ServerState.lastHeartRate) }
     var lastAction by remember { mutableStateOf(ServerState.lastAction) }
+    // Wall-clock end of the last wake request sent from here, so the subline can say the watch
+    // is being held awake. Local to this card: the watch owns the real timer.
+    var wakeUntil by remember { mutableLongStateOf(0L) }
+    var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
 
     LaunchedEffect(Unit) {
         while (true) {
@@ -222,6 +227,7 @@ private fun WatchStatusCard(onWearError: (String) -> Unit = {}) {
             }
             bpm = ServerState.lastHeartRate
             lastAction = ServerState.lastAction
+            now = System.currentTimeMillis()
             delay(3000)
         }
     }
@@ -260,6 +266,8 @@ private fun WatchStatusCard(onWearError: (String) -> Unit = {}) {
                 // Ping result and last watch action share one subline: both answer "is the
                 // wrist still with us", and neither deserves its own row of height.
                 val subline = pingStatusLabel(pingState)
+                    ?: (wakeUntil - now).takeIf { it > 0 }
+                        ?.let { stringResource(R.string.watchbar_wake_sent, ((it + 59_999) / 60_000).toInt()) }
                     ?: lastAction.takeIf { it.isNotEmpty() }
                         ?.let { stringResource(R.string.watchbar_last_action, it) }
                 if (subline != null) {
@@ -297,6 +305,24 @@ private fun WatchStatusCard(onWearError: (String) -> Unit = {}) {
                 contentPadding = PaddingValues(horizontal = 10.dp, vertical = 2.dp)
             ) {
                 Text(stringResource(R.string.watchbar_button_ping), fontSize = 11.sp, maxLines = 1)
+            }
+            // Holds the watch at full rate for a few minutes without starting a run, for
+            // checking fit and signal during setup. The watch's own session logic takes over if
+            // a run starts inside the window.
+            TextButton(
+                onClick = {
+                    val minutes = Protocol.WATCH_WAKE_DEFAULT_MINUTES
+                    WearMessageSender(context).sendWake(minutes * 60_000L, onError = onWearError)
+                    wakeUntil = System.currentTimeMillis() + minutes * 60_000L
+                    now = System.currentTimeMillis()
+                },
+                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 2.dp)
+            ) {
+                Text(
+                    stringResource(R.string.watchbar_button_wake, Protocol.WATCH_WAKE_DEFAULT_MINUTES),
+                    fontSize = 11.sp,
+                    maxLines = 1
+                )
             }
             IconButton(
                 onClick = { WearMessageSender(context).sendExit(onError = onWearError) },

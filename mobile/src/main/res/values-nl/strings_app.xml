@@ -12,6 +12,7 @@
     <string name="wear_error_no_watch_found">Er is geen WearOS-horloge gevonden om het bericht naartoe te sturen! Zorg dat er een is verbonden met het apparaat en dat Bluetooth + internet aanstaan!</string>
     <!-- WearMessageSender.kt:189 -->
     <string name="wear_error_ping_failed">Kon geen enkele verbonden node pingen</string>
+    <string name="wear_error_wake_failed">Wekverzoek kon niet naar het horloge worden gestuurd</string>
     <!-- WearMessageSender.kt:68 -->
     <string name="wear_error_reach_watch">Kon horloge niet bereiken: %1$s</string>
     <!-- WearMessageSender.kt:219 -->

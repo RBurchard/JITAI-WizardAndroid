@@ -12,6 +12,7 @@
     <string name="wear_error_no_watch_found">Es wurde keine WearOS-Uhr gefunden, an die die Nachricht gesendet werden kann! Stelle sicher, dass eine Uhr mit dem Gerät verbunden ist und Bluetooth sowie Internet aktiviert sind!</string>
     <!-- WearMessageSender.kt:189 -->
     <string name="wear_error_ping_failed">Ping an kein verbundenes Gerät möglich</string>
+    <string name="wear_error_wake_failed">Wecksignal konnte nicht an die Uhr gesendet werden</string>
     <!-- WearMessageSender.kt:68 -->
     <string name="wear_error_reach_watch">Uhr konnte nicht erreicht werden: %1$s</string>
     <!-- WearMessageSender.kt:219 -->

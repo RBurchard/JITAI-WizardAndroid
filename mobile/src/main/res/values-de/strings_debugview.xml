@@ -210,6 +210,8 @@
     <string name="watchbar_button_close_watch">Uhr schließen</string>
     <!-- DebugViewScreen.kt:164 -->
     <string name="watchbar_button_ping">Ping</string>
+    <string name="watchbar_button_wake">%1$d Min wach</string>
+    <string name="watchbar_wake_sent">Uhr %1$d Min wach</string>
     <!-- DebugViewScreen.kt:141 -->
     <string name="watchbar_heart_rate">%1$d BPM</string>
     <!-- DebugViewScreen.kt:147 -->

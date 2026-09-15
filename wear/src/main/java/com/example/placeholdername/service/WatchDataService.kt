@@ -16,10 +16,13 @@ import android.util.Log
 import androidx.health.services.client.HealthServices
 import androidx.health.services.client.MeasureCallback
 import androidx.health.services.client.MeasureClient
+import androidx.health.services.client.PassiveListenerCallback
+import androidx.health.services.client.PassiveMonitoringClient
 import androidx.health.services.client.data.Availability
 import androidx.health.services.client.data.DataPointContainer
 import androidx.health.services.client.data.DataType
 import androidx.health.services.client.data.DeltaDataType
+import androidx.health.services.client.data.PassiveListenerConfig
 import com.example.jitaicompanion.R
 import com.example.jitaicompanion.convention.models.WatchDataBatch
 import com.example.jitaicompanion.convention.models.WatchDataSnapshot
@@ -34,6 +37,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.Executors
 
@@ -45,15 +49,18 @@ import java.util.concurrent.Executors
  * - **Active** is the study configuration and is unchanged: accelerometer, gyroscope and
  *   rotation vector at `SENSOR_DELAY_GAME`, continuous heart rate through both the Health
  *   Services and the legacy path, motion decimated to ~50 Hz and a batch flushed every 100 ms.
- * - **Idle** keeps only the accelerometer at `SENSOR_DELAY_NORMAL` and the step counter, which
- *   is a hardware counter and effectively free, samples heart rate for [IDLE_HR_WINDOW_MS] every
- *   [IDLE_HR_PERIOD_MS] instead of continuously, and flushes one snapshot every
- *   [IDLE_BATCH_INTERVAL_MS].
+ * - **Idle** registers nothing that wakes the application processor on a schedule. The step
+ *   counter is kept, batched in the sensor hub for [IDLE_SENSOR_LATENCY_MS] at a time; the
+ *   accelerometer goes entirely (the step counter already says whether the wrist is moving).
+ *   Heart rate comes from Health Services' passive monitoring, which piggybacks on whatever
+ *   periodic reading the system is already taking, falling back to a short measurement every
+ *   few minutes on watches that cannot do that. One snapshot is flushed every
+ *   [IDLE_BATCH_INTERVAL_MS] so the phone still sees a live watch.
  *
  * The three biggest costs are the ones idle addresses: the PPG sensor, the gyroscope and
  * rotation vector (which fuses several sensors), and holding the Bluetooth radio up with ten
- * messages a second. Idle takes those from roughly 600 messages a minute to six, and the heart
- * rate sensor to a 7% duty cycle.
+ * messages a second. Idle takes those from roughly 600 messages a minute to one, and the heart
+ * rate sensor to whatever the OS was going to spend anyway.
  */
 class WatchDataService : Service(), SensorEventListener {
 
@@ -68,18 +75,20 @@ class WatchDataService : Service(), SensorEventListener {
         // approach the 100 KB Wearable message cap (~250 bytes/snapshot).
         private const val MAX_BUFFERED_SNAPSHOTS = 600
 
-        /** Idle flush cadence. One snapshot each, so the phone still sees a live watch. */
-        private const val IDLE_BATCH_INTERVAL_MS = 10_000L
+        /** Idle flush cadence. One snapshot each, so the phone still sees a live watch. The
+         *  phone's "watch connected" indicator comes from the Data Layer node list, not from
+         *  this, so it can be slow without the watch reading as gone. */
+        private const val IDLE_BATCH_INTERVAL_MS = 60_000L
 
-        /** Idle heart rate duty cycle: measure this long ... */
+        /** How long the sensor hub may hold idle-profile samples before waking us with them. */
+        private const val IDLE_SENSOR_LATENCY_MS = 60_000L
+
+        /** Fallback heart rate duty cycle for watches without passive monitoring: measure this
+         *  long ... */
         private const val IDLE_HR_WINDOW_MS = 12_000L
 
         /** ... once every this long. */
         private const val IDLE_HR_PERIOD_MS = 3 * 60 * 1000L
-
-        /** How often the policy re-checks its clock. Idling is triggered by nothing happening,
-         *  so something has to look. */
-        private const val POLICY_TICK_MS = 20_000L
 
         private val _isRunning = MutableStateFlow(false)
         val isRunning: StateFlow<Boolean> = _isRunning.asStateFlow()
@@ -109,7 +118,7 @@ class WatchDataService : Service(), SensorEventListener {
     private var lastMotionSnapshotMs = 0L
     private var batchJob: Job? = null
     private var policyJob: Job? = null
-    private var idleHeartRateJob: Job? = null
+    @Volatile private var idleHeartRateJob: Job? = null
     private val serviceScope = CoroutineScope(Dispatchers.IO)
 
     private val measureExecutor = Executors.newSingleThreadExecutor()
@@ -122,6 +131,11 @@ class WatchDataService : Service(), SensorEventListener {
     /** Null until the first capability check; cached so an idle cycle does not re-ask hourly. */
     private var healthServicesHasHeartRate: Boolean? = null
 
+    private var passiveClient: PassiveMonitoringClient? = null
+    /** Null until the first capability check. False also after a registration that failed. */
+    private var passiveHasHeartRate: Boolean? = null
+    @Volatile private var passiveRegistered = false
+
     @Volatile private var profile = PowerProfile.ACTIVE
 
     private val heartRateMeasureCallback = object : MeasureCallback {
@@ -133,12 +147,35 @@ class WatchDataService : Service(), SensorEventListener {
         override fun onDataReceived(data: DataPointContainer) {
             Log.v(TAG, "onDataReceived: Data received from Health Services")
             data.getData(DataType.HEART_RATE_BPM).lastOrNull()?.value?.let { bpm ->
-                val hr = bpm.toFloat()
-                Log.d(TAG, "New HR value: $hr bpm")
-                latestHeartRate = hr
-                _heartRateState.value = hr
-                snapshotBuffer.add(buildSnapshot())
+                onHeartRate(bpm.toFloat(), "Health Services")
             } ?: Log.w(TAG, "onDataReceived: No HEART_RATE_BPM in container")
+        }
+    }
+
+    /**
+     * Idle heart rate. The system delivers whatever it measured, whenever it measured it, in
+     * batches; only the newest reading matters here.
+     */
+    private val passiveHeartRateCallback = object : PassiveListenerCallback {
+        override fun onNewDataPointsReceived(dataPoints: DataPointContainer) {
+            dataPoints.getData(DataType.HEART_RATE_BPM).lastOrNull()?.value?.let { bpm ->
+                if (bpm > 0) onHeartRate(bpm.toFloat(), "passive")
+            }
+        }
+
+        override fun onRegistrationFailed(throwable: Throwable) {
+            Log.w(TAG, "Passive heart rate registration failed, using duty cycle", throwable)
+            passiveRegistered = false
+            passiveHasHeartRate = false
+            if (profile == PowerProfile.IDLE) {
+                idleHeartRateJob?.cancel()
+                idleHeartRateJob = serviceScope.launch { idleHeartRateCycle() }
+            }
+        }
+
+        override fun onPermissionLost() {
+            Log.w(TAG, "Passive heart rate permission lost")
+            passiveRegistered = false
         }
     }
 
@@ -182,11 +219,21 @@ class WatchDataService : Service(), SensorEventListener {
 
     // ── Power profile ────────────────────────────────────────────────────────
 
+    /**
+     * Drives [WatchPowerPolicy.evaluate] at the moments it can matter.
+     *
+     * Idling is triggered by nothing happening, so something has to look at the clock. Rather
+     * than polling every few seconds (which in idle is the only thing left waking the CPU),
+     * sleep until the policy says the profile could next change, or until it kicks
+     * [WatchPowerPolicy.ticks] because a deadline moved.
+     */
     private fun startPolicyLoop() {
         policyJob = serviceScope.launch {
             launch {
                 while (true) {
-                    delay(POLICY_TICK_MS)
+                    withTimeoutOrNull(WatchPowerPolicy.msUntilNextTransition()) {
+                        WatchPowerPolicy.ticks.receive()
+                    }
                     WatchPowerPolicy.evaluate()
                 }
             }
@@ -204,6 +251,7 @@ class WatchDataService : Service(), SensorEventListener {
         idleHeartRateJob = null
         sensorManager.unregisterListener(this)
         stopHeartRateMeasure()
+        stopPassiveHeartRate()
 
         when (next) {
             PowerProfile.ACTIVE -> {
@@ -216,15 +264,42 @@ class WatchDataService : Service(), SensorEventListener {
                 startHeartRate()
             }
             PowerProfile.IDLE -> {
-                // Only the two cheap ones. The step counter is a hardware counter that runs
-                // whether we listen or not, and the accelerometer at NORMAL is a few samples a
-                // second, which is enough to show the phone that the watch is alive and moving.
-                registerSensor(Sensor.TYPE_ACCELEROMETER, SensorManager.SENSOR_DELAY_NORMAL, "accelerometer")
-                registerSensor(Sensor.TYPE_STEP_COUNTER, SensorManager.SENSOR_DELAY_NORMAL, "step_counter")
-                idleHeartRateJob = serviceScope.launch { idleHeartRateCycle() }
+                // Only the step counter, and even that batched: it is a hardware counter that
+                // runs whether we listen or not, and letting the hub hold its events for a
+                // minute means the application processor is not woken for each step. No
+                // accelerometer: a few samples a second are still a few wakeups a second, and
+                // the step counter already tells the phone whether the wrist is moving.
+                registerSensor(
+                    Sensor.TYPE_STEP_COUNTER, SensorManager.SENSOR_DELAY_NORMAL, "step_counter",
+                    maxReportLatencyMs = IDLE_SENSOR_LATENCY_MS
+                )
+                idleHeartRateJob = serviceScope.launch { idleHeartRate() }
             }
         }
         updateNotification()
+    }
+
+    // ── Heart rate ───────────────────────────────────────────────────────────
+
+    private fun onHeartRate(hr: Float, source: String) {
+        Log.d(TAG, "$source HR: $hr bpm")
+        latestHeartRate = hr
+        _heartRateState.value = hr
+        snapshotBuffer.add(buildSnapshot())
+    }
+
+    /**
+     * Idle heart rate: passive monitoring if the watch has it, a duty cycle if not.
+     *
+     * Passive monitoring is Health Services' background API. The system decides when to light
+     * the PPG, shares the reading with its own health tracking, and delivers it in batches; we
+     * pay nothing on top. `MeasureClient`, which the active profile uses, is the foreground API
+     * and keeps the sensor on for as long as it is registered, which is exactly what idle is
+     * trying not to do.
+     */
+    private suspend fun idleHeartRate() {
+        if (startPassiveHeartRate()) return
+        idleHeartRateCycle()
     }
 
     /**
@@ -246,15 +321,60 @@ class WatchDataService : Service(), SensorEventListener {
         }
     }
 
-    // ── Heart rate ───────────────────────────────────────────────────────────
+    /** True if passive heart rate is supported and the registration was submitted. */
+    private fun startPassiveHeartRate(): Boolean {
+        val client = passiveClient ?: HealthServices.getClient(this).passiveMonitoringClient.also {
+            passiveClient = it
+        }
+        val supported = passiveHasHeartRate ?: try {
+            val capabilities = client.getCapabilitiesAsync().get()
+            val value = DataType.HEART_RATE_BPM in capabilities.supportedDataTypesPassiveMonitoring
+            passiveHasHeartRate = value
+            Log.d(TAG, "Heart rate supported via passive monitoring: $value")
+            value
+        } catch (e: Exception) {
+            Log.e(TAG, "Passive monitoring capability check failed", e)
+            passiveHasHeartRate = false
+            false
+        }
+        if (!supported) return false
+        // The profile may have flipped back to active during the capability check.
+        if (profile != PowerProfile.IDLE) return true
+        val config = PassiveListenerConfig.builder()
+            .setDataTypes(setOf(DataType.HEART_RATE_BPM))
+            .build()
+        return try {
+            client.setPassiveListenerCallback(config, measureExecutor, passiveHeartRateCallback)
+            passiveRegistered = true
+            Log.d(TAG, "Passive heart rate callback registered")
+            // Same race as registerHeartRateMeasure: active may have arrived while we registered.
+            if (profile != PowerProfile.IDLE) stopPassiveHeartRate()
+            true
+        } catch (e: Exception) {
+            Log.e(TAG, "Passive heart rate registration failed", e)
+            passiveHasHeartRate = false
+            false
+        }
+    }
+
+    private fun stopPassiveHeartRate() {
+        if (!passiveRegistered) return
+        passiveRegistered = false
+        try {
+            passiveClient?.clearPassiveListenerCallbackAsync()
+            Log.d(TAG, "Passive heart rate callback cleared")
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to clear passive heart rate callback: ${e.message}")
+        }
+    }
 
     /**
      * Both heart rate paths at once.
      *
      * Health Services is the modern API, but some devices publish to the legacy HAL even when
      * MeasureClient claims support, so the legacy sensor is registered as well rather than only
-     * as a fallback. Idle keeps this pairing inside its short window, where the double
-     * registration costs a few seconds rather than a day.
+     * as a fallback. The idle duty cycle keeps this pairing inside its short window, where the
+     * double registration costs a few seconds rather than a day.
      */
     private fun startHeartRate() {
         registerHeartRateMeasure()
@@ -326,15 +446,26 @@ class WatchDataService : Service(), SensorEventListener {
 
     // ── Sensors ──────────────────────────────────────────────────────────────
 
-    private fun registerSensor(type: Int, delay: Int, label: String) {
+    /**
+     * [maxReportLatencyMs] lets the sensor hub hold events in its FIFO and deliver them in one
+     * go instead of waking the application processor per sample. The active profile leaves it
+     * at zero: the ~50 Hz motion stream is fused from three sensors by "latest value" at
+     * delivery time, and batching them independently would pair an accelerometer sample with a
+     * gyroscope reading from up to a batch earlier.
+     */
+    private fun registerSensor(type: Int, delay: Int, label: String, maxReportLatencyMs: Long = 0L) {
         val sensor = sensorManager.getDefaultSensor(type)
         if (sensor == null) {
             Log.w(TAG, "Sensor missing: $label")
             return
         }
-        val registered = sensorManager.registerListener(this, sensor, delay)
+        val registered = if (maxReportLatencyMs > 0) {
+            sensorManager.registerListener(this, sensor, delay, (maxReportLatencyMs * 1000).toInt())
+        } else {
+            sensorManager.registerListener(this, sensor, delay)
+        }
         if (registered) {
-            Log.d(TAG, "Sensor registered: $label (${sensor.name}), delay=$delay")
+            Log.d(TAG, "Sensor registered: $label (${sensor.name}), delay=$delay, latency=${maxReportLatencyMs}ms")
         } else {
             Log.w(TAG, "Failed to register sensor: $label (${sensor.name})")
         }
@@ -344,12 +475,7 @@ class WatchDataService : Service(), SensorEventListener {
         when (event.sensor.type) {
             Sensor.TYPE_HEART_RATE -> {
                 val hr = event.values[0]
-                Log.d(TAG, "SensorManager HR: $hr bpm")
-                if (hr > 0f) {
-                    latestHeartRate = hr
-                    _heartRateState.value = hr
-                    snapshotBuffer.add(buildSnapshot())
-                }
+                if (hr > 0f) onHeartRate(hr, "SensorManager")
             }
             Sensor.TYPE_STEP_COUNTER -> latestStepCount = event.values[0].toInt()
             Sensor.TYPE_GYROSCOPE -> {
@@ -374,9 +500,8 @@ class WatchDataService : Service(), SensorEventListener {
                 // reconstruct fast gestures. The batch loop flushes every 100 ms,
                 // so this adds only ~5–6 snapshots per batch.
                 //
-                // Idle skips the stream entirely: the batch loop already adds one snapshot per
-                // flush, and buffering 5 Hz of motion for ten seconds would send fifty rows
-                // nobody asked for.
+                // Idle has no accelerometer, but guard anyway: an event already queued when
+                // the profile flipped would otherwise buffer a row nobody asked for.
                 if (profile != PowerProfile.ACTIVE) return
                 val now = System.currentTimeMillis()
                 if (now - lastMotionSnapshotMs >= MOTION_SAMPLE_MIN_INTERVAL_MS) {
@@ -439,6 +564,7 @@ class WatchDataService : Service(), SensorEventListener {
         policyJob?.cancel()
         idleHeartRateJob?.cancel()
         stopHeartRateMeasure()
+        stopPassiveHeartRate()
         measureExecutor.shutdown()
         sensorManager.unregisterListener(this)
     }

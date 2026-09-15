@@ -15,6 +15,7 @@ import com.BWPStudio.JITAIWizard.server.routes.streamRoute
 import com.BWPStudio.JITAIWizard.server.routes.triggerFireRoute
 import com.BWPStudio.JITAIWizard.server.routes.triggerRoute
 import com.BWPStudio.JITAIWizard.server.routes.triviaRoute
+import com.BWPStudio.JITAIWizard.server.routes.watchWakeRoute
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
@@ -54,6 +55,7 @@ class KtorServer(private val context: Context) {
                     experimentControlRoute(app)
                     logsRoute()
                     triggerFireRoute()
+                    watchWakeRoute(context)
                     eventsWsRoute(app)
                 }
             }.start(wait = false)

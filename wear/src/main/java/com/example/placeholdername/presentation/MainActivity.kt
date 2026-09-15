@@ -44,6 +44,7 @@ import androidx.wear.compose.ui.tooling.preview.WearPreviewDevices
 import androidx.wear.compose.ui.tooling.preview.WearPreviewFontScales
 import com.example.jitaicompanion.R
 import com.example.jitaicompanion.presentation.theme.JitaiCompanionTheme
+import com.example.jitaicompanion.service.WatchDataPermissions
 import com.example.jitaicompanion.service.WatchDataService
 import com.example.jitaicompanion.ui.layout.ProvideWearDimens
 import com.example.jitaicompanion.ui.layout.sdp
@@ -60,11 +61,8 @@ class MainActivity : ComponentActivity() {
         private const val PERMISSION_REQUEST_CODE = 1101
     }
 
-    // Service start is gated on these.
-    private val mandatoryPermissions: Array<String> = arrayOf(
-        Manifest.permission.ACTIVITY_RECOGNITION,
-        Manifest.permission.POST_NOTIFICATIONS
-    )
+    // Service start is gated on these; see WatchDataPermissions for the actual check.
+    private val mandatoryPermissions: Array<String> = WatchDataPermissions.mandatory
 
     // Sensor permissions: we request these but the service will attempt to run
     // if at least one heart-rate related permission is granted.
@@ -72,7 +70,7 @@ class MainActivity : ComponentActivity() {
         arrayOf(
             Manifest.permission.BODY_SENSORS,
             Manifest.permission.BODY_SENSORS_BACKGROUND,
-            "android.permission.health.READ_HEART_RATE"
+            WatchDataPermissions.READ_HEART_RATE
         )
     } else {
         arrayOf(Manifest.permission.BODY_SENSORS)
@@ -143,28 +141,9 @@ class MainActivity : ComponentActivity() {
         ActivityCompat.requestPermissions(this, missing.toTypedArray(), PERMISSION_REQUEST_CODE)
     }
 
-    private fun hasRequiredPermissions(): Boolean {
-        val missingMandatory = mandatoryPermissions.filter {
-            ContextCompat.checkSelfPermission(this, it) != android.content.pm.PackageManager.PERMISSION_GRANTED
-        }
-        
-        // At least one HR permission must be granted
-        val hrGranted = ContextCompat.checkSelfPermission(this, Manifest.permission.BODY_SENSORS) == android.content.pm.PackageManager.PERMISSION_GRANTED ||
-                ContextCompat.checkSelfPermission(this, "android.permission.health.READ_HEART_RATE") == android.content.pm.PackageManager.PERMISSION_GRANTED
-
-        if (missingMandatory.isNotEmpty()) {
-            Log.w("MainActivity", "hasRequiredPermissions: Missing mandatory: $missingMandatory")
-        }
-        if (!hrGranted) {
-            Log.w("MainActivity", "hasRequiredPermissions: No Heart Rate permissions (Body Sensors or Health Read) granted")
-        }
-
-        return missingMandatory.isEmpty() && hrGranted
-    }
-
     private fun startWatchDataServiceIfAllowed() {
         Log.d("MainActivity", "startWatchDataServiceIfAllowed: Checking...")
-        if (!hasRequiredPermissions()) {
+        if (!WatchDataPermissions.canRunDataService(this)) {
             Log.e("MainActivity", "startWatchDataServiceIfAllowed: Permissions NOT sufficient")
             return
         }

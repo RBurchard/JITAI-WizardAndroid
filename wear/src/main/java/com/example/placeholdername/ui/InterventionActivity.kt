@@ -9,7 +9,9 @@ import android.os.Vibrator
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -255,22 +257,20 @@ private fun TimerScreen(
     intervention: Intervention,
     onAccepted: (String) -> Unit
 ) {
-    var progress by remember { mutableStateOf(0f) }
-    val animatedProgress by animateFloatAsState(targetValue = progress)
-
+    // One linear animation over the whole duration. The previous version polled the clock
+    // every 16 ms and fed the result through a second spring animation, so two animation
+    // clocks ran for the length of every timer; the frame clock alone does the same job.
+    val progress = remember { Animatable(0f) }
     LaunchedEffect(Unit) {
-        val start = System.currentTimeMillis()
-        while (true) {
-            val elapsed = System.currentTimeMillis() - start
-            progress = (elapsed / (intervention.durationSeconds * 1000f)).coerceIn(0f, 1f)
-            if (progress >= 1f) break
-            delay(16L)
-        }
+        progress.animateTo(
+            targetValue = 1f,
+            animationSpec = tween(durationMillis = intervention.durationSeconds * 1000, easing = LinearEasing)
+        )
     }
 
-    val remaining = ((1f - animatedProgress) * intervention.durationSeconds).toInt()
+    val remaining = ((1f - progress.value) * intervention.durationSeconds).toInt()
     CircularProgressWithCenter(
-        progress = animatedProgress,
+        progress = progress.value,
         text = intervention.message,
         timerText = stringResource(R.string.intervention_timer_seconds_remaining, remaining),
         onOk = { onAccepted("Timer OK") }

@@ -1,8 +1,6 @@
 package com.example.jitaicompanion.datalayer
 
-import android.Manifest
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
@@ -13,6 +11,7 @@ import com.example.jitaicompanion.convention.models.Intervention
 import com.example.jitaicompanion.convention.models.MicrogameSettings
 import com.example.jitaicompanion.convention.models.NotificationType
 import com.example.jitaicompanion.power.WatchPowerPolicy
+import com.example.jitaicompanion.service.WatchDataPermissions
 import com.example.jitaicompanion.service.WatchDataService
 import com.example.jitaicompanion.ui.InterventionActivity
 import com.example.jitaicompanion.ui.games.GameSettings
@@ -29,34 +28,49 @@ class WearMessageListener : WearableListenerService() {
     private val sender by lazy { WearMessageSender(this) }
 
     override fun onMessageReceived(event: MessageEvent) {
-        ensureDataServiceRunning()
+        val data = String(event.data)
+        if (engagesWatch(event.path, data)) ensureDataServiceRunning()
         // Any message means someone is working with this watch, which is enough to keep it out
         // of the idle profile for the next few minutes.
         WatchPowerPolicy.onPhoneContact()
         when (event.path) {
-            Protocol.PATH_INTERVENTION -> handleIntervention(String(event.data))
+            Protocol.PATH_INTERVENTION -> handleIntervention(data)
             Protocol.PATH_PHONE_TASK -> showCheckPhoneScreen()
-            Protocol.PATH_PING -> handlePing(String(event.data))
+            Protocol.PATH_PING -> handlePing(data)
             Protocol.PATH_EXIT -> handleExit()
-            Protocol.PATH_GAME_SETTINGS -> handleGameSettings(String(event.data))
-            Protocol.PATH_SESSION_STATE -> handleSessionState(String(event.data))
+            Protocol.PATH_GAME_SETTINGS -> handleGameSettings(data)
+            Protocol.PATH_SESSION_STATE -> handleSessionState(data)
+            Protocol.PATH_POWER_WAKE -> handleWake(data)
         }
     }
 
+    /**
+     * Whether a message is the phone actively wanting the watch, as opposed to housekeeping.
+     *
+     * The data service is (re)started for the first kind only. A wizard who pressed Force End
+     * on the watch should not have it quietly come back because the phone pushed game settings
+     * on reconnect or said "no session running". A run starting, an intervention, a ping or a
+     * wake request are a different matter: those are someone asking for the watch, and a
+     * watch that answers with nothing is a hole in the study data.
+     */
+    private fun engagesWatch(path: String, data: String): Boolean = when (path) {
+        Protocol.PATH_INTERVENTION, Protocol.PATH_PHONE_TASK, Protocol.PATH_PING,
+        Protocol.PATH_POWER_WAKE -> true
+        Protocol.PATH_SESSION_STATE -> data.trim() == "1"
+        else -> false
+    }
+
     private fun ensureDataServiceRunning() {
-        val hasBodySensors = ContextCompat.checkSelfPermission(
-            applicationContext, Manifest.permission.BODY_SENSORS
-        ) == PackageManager.PERMISSION_GRANTED
-        if (!hasBodySensors) {
-            Log.w("WearMessageListener", "BODY_SENSORS not granted — cannot start WatchDataService")
+        if (WatchDataService.isRunning.value) return
+        if (!WatchDataPermissions.canRunDataService(applicationContext)) {
+            Log.w("WearMessageListener", "Permissions missing — cannot start WatchDataService")
             return
         }
-        if (!WatchDataService.isRunning.value) {
-            ContextCompat.startForegroundService(
-                applicationContext,
-                Intent(applicationContext, WatchDataService::class.java)
-            )
-        }
+        Log.i("WearMessageListener", "Data service not running, starting it")
+        ContextCompat.startForegroundService(
+            applicationContext,
+            Intent(applicationContext, WatchDataService::class.java)
+        )
     }
 
     private fun handleIntervention(data: String) {
@@ -129,6 +143,14 @@ class WearMessageListener : WearableListenerService() {
         val active = data.trim() == "1"
         Log.d("WearMessageListener", "Session state from phone: active=$active")
         WatchPowerPolicy.onSessionState(active)
+    }
+
+    /** The wizard wants live sensors for a while without starting a run. Payload: milliseconds. */
+    private fun handleWake(data: String) {
+        val durationMs = data.trim().toLongOrNull()
+            ?: Protocol.WATCH_WAKE_DEFAULT_MINUTES * 60_000L
+        Log.d("WearMessageListener", "Wake request from phone: ${durationMs / 1000}s")
+        WatchPowerPolicy.onWakeRequested(durationMs)
     }
 
     private fun handleExit() {

@@ -222,6 +222,7 @@ The Ktor server runs on port 8080 and accepts connections from ControlStation (o
 | GET | /data | Returns session ID, participant label, last reaction time (ms), last heart rate, and last action string |
 | POST | /trigger | Accepts an intervention request (JSON), sends it to the watch, returns the intervention ID |
 | POST | /trigger/fire | Fires a manual trigger event by trigger ID |
+| POST | /watch/wake | Asks the watch to hold full sensor rate for `{"minutes": n}` (default 5, max 60) without starting a run; relayed to the watch as `/power/wake` |
 | GET | /participant | Returns the current participant info object |
 | POST | /participant | Sets participant info (id, sessionId, label, deviceIp) — must be called by ControlStation before starting a session so that watch data is linked to the correct session row in the database |
 | GET | /experiment | Returns the current experiment configuration JSON; includes an ETag header for conflict detection |
@@ -249,6 +250,8 @@ ControlStation listens on this port to populate its device discovery list.
 
 - Interventions are sent via `MessageClient` to the path `/intervention/trigger` as serialized JSON.
 - Ping messages are sent to `/ping` to check connectivity.
+- `/session/state` carries "1" while a run is in progress and "0" otherwise, repeated every minute while running so the watch can expire a stale claim (see the watch's power profiles below).
+- `/power/wake` carries a duration in milliseconds and holds the watch at full rate for that long without a run; sent by the **Wake 5 min** button in the phone's watch bar and by ControlStation via `POST /watch/wake`.
 - Node discovery uses the capability name `jitai_wizard_wear`, with a fallback to any connected node on first-run scenarios.
 
 **Incoming (watch to phone):**
@@ -356,7 +359,18 @@ A foreground health service that collects sensor data continuously. It uses a du
 
 Both strategies run simultaneously. Whichever delivers a reading first wins for that moment. This ensures the service works on devices that only partially support Health Services.
 
-Every 1000 ms, all buffered sensor readings since the last batch are packaged into a `WatchDataBatch` and sent to the phone via the Wearable Data Layer.
+Every 100 ms, all buffered sensor readings since the last batch are packaged into a `WatchDataBatch` and sent to the phone via the Wearable Data Layer.
+
+#### Power profiles
+
+The service runs in one of two profiles, chosen by `WatchPowerPolicy`:
+
+- **Active** is the study configuration described above and is what runs during a session.
+- **Idle** keeps only the step counter (batched in the sensor hub for a minute at a time), takes heart rate from Health Services passive monitoring (or a 12 s measurement every 3 minutes on watches without it), and sends one snapshot a minute so the phone still sees a live watch. Nothing in the idle profile wakes the processor on a schedule.
+
+The watch drops to idle only when **all** of these hold: the phone has not claimed a running session (`/session/state` = "1", which expires after 3 minutes without a refresh), no wake request is outstanding (`/power/wake`, 5-60 minutes), no screen of the app is open, and nothing has touched the watch for 5 minutes (any phone message or app screen counts). The watch never infers "no session" on its own; a schedule can legitimately sit on a fifteen minute wait.
+
+**Wake 5 min** (phone watch bar, ControlStation connection card) exists for setup: live heart rate and motion on the ControlStation while fitting the watch, without a run. It is only a delay on the idle timer. A run started inside the window keeps the watch awake on its own for as long as it runs; nothing needs cancelling.
 
 ### Sensors Collected
 
@@ -383,8 +397,12 @@ Handled by `WearMessageListener`:
 | /intervention/trigger | Deserializes the Intervention JSON and launches the appropriate activity or game |
 | /phone/task | Displays a prompt to check the phone |
 | /ping | Responds immediately with /pong |
+| /session/state | "1" or "0": the phone's view of whether a run is in progress, for the power profile |
+| /power/wake | Duration in ms: hold the active profile that long without a run |
+| /game/settings | Applies pushed microgame settings and echoes the stored values on /game/settings/ack |
+| /exit | Closes any open intervention or game screen |
 
-When any message arrives, `WearMessageListener` also auto-starts `WatchDataService` if it is not already running and permissions are available.
+`WearMessageListener` also starts `WatchDataService` if it is not running when the phone actively wants the watch: an intervention, a phone task, a ping, a wake request, or `/session/state` = "1". Housekeeping messages (settings pushes, `/exit`, "no session") do not, so a watch that was shut down with **Force End** stays down until the phone asks for it.
 
 **Outgoing (watch to phone):**
 

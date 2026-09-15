@@ -275,6 +275,58 @@ class WearMessageSender(private val context: Context) {
         }
     }
 
+    /**
+     * Asks the watch to stay at full collection rate for [durationMs] without a run starting.
+     *
+     * For the wizard setting up: live heart rate and motion on the ControlStation while the
+     * participant is being fitted. Purely a delay on the watch's idle timer; a run that starts
+     * inside the window keeps the watch awake on its own afterwards, so there is nothing here
+     * to cancel. Reports failure like a ping does, since a person is waiting for the result.
+     */
+    fun sendWake(durationMs: Long, onError: ((String) -> Unit)? = null) {
+        CoroutineScope(Dispatchers.IO).launch {
+            val payload = durationMs.toString().toByteArray()
+            val nodes = try {
+                resolveNodes()
+            } catch (e: Exception) {
+                reportError(buildFailureMessage(e), onError)
+                return@launch
+            }
+            if (nodes.isEmpty()) {
+                reportError(noWearMessage, onError)
+                return@launch
+            }
+            var failures = 0
+            nodes.forEach { node ->
+                try {
+                    messageClient.sendMessage(node.id, Protocol.PATH_POWER_WAKE, payload).await()
+                    syncLogger?.log(
+                        eventType = "wear_send",
+                        value = "wake_sent",
+                        path = Protocol.PATH_POWER_WAKE,
+                        nodeId = node.id,
+                        payloadBytes = payload.size,
+                        details = "durationMs=$durationMs"
+                    )
+                } catch (e: Exception) {
+                    failures++
+                    Log.e(TAG, "Failed to send wake to ${node.id}", e)
+                    syncLogger?.log(
+                        eventType = "wear_send",
+                        value = "wake_failed",
+                        path = Protocol.PATH_POWER_WAKE,
+                        nodeId = node.id,
+                        payloadBytes = payload.size,
+                        details = e.message ?: "unknown_error"
+                    )
+                }
+            }
+            if (failures == nodes.size) {
+                reportError(context.getString(R.string.wear_error_wake_failed), onError)
+            }
+        }
+    }
+
     fun sendExit(onError: ((String) -> Unit)? = null) {
         CoroutineScope(Dispatchers.IO).launch {
             val nodes = try {
