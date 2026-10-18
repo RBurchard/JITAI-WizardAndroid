@@ -172,10 +172,18 @@ class ExperimentStore(context: Context) {
     // Extra experiment variants shipped with the APK (kept in sync with the Control
     // Station's Assets/experiment_*.json). They are seeded into schedule slots so the
     // phone can pick between them in the Load dialog. Maps asset file -> slot name shown.
+    // Covers the English default as a named slot (fresh installs only get it as the active
+    // schedule) and a German variant of each experiment. Slot names stay within
+    // sanitize()'s allowed characters so they are shown exactly as written.
     private val bundledTemplates = linkedMapOf(
-        "experiment_distraction_combo.json" to "Distraction Combo - No Games",
-        "experiment_alt_microgames.json"    to "Alternate Microgame - Lock Picking",
-        "experiment_standstill_only.json"   to "Stand Still Only"
+        "default_experiment.json"              to "Default - Hand-washing Study",
+        "experiment_distraction_combo.json"    to "Distraction Combo - No Games",
+        "experiment_alt_microgames.json"       to "Alternate Microgame - Lock Picking",
+        "experiment_standstill_only.json"      to "Stand Still Only",
+        "experiment_default_de.json"           to "DE - Handhygiene-JITAI-Studie - Standard",
+        "experiment_alt_microgames_de.json"    to "DE - Handhygiene - Alternatives Minispiel - Schlossknacken",
+        "experiment_distraction_combo_de.json" to "DE - Handhygiene - Ablenkungs-Kombi - Ohne Spiele",
+        "experiment_standstill_only_de.json"   to "DE - Handhygiene - Nur Stillstehen"
     )
 
     // Records which template assets have already been seeded, so a researcher who deletes
