@@ -38,8 +38,8 @@ android {
         applicationId = "com.BWPStudio.JITAIWizard"
         minSdk = 33
         targetSdk = 36
-        versionCode = 4
-        versionName = "2.0.0"
+        versionCode = 5
+        versionName = "2.1.0"
 
     }
 

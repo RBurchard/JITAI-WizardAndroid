@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <b>Latest release:</b> <a href="https://github.com/RBurchard/JITAI-WizardAndroid/releases">v2.0.0</a> &middot; signed Phone APK + Wear OS APK
+  <b>Latest release:</b> <a href="https://github.com/RBurchard/JITAI-WizardAndroid/releases">v2.1.0-beta</a> &middot; signed Phone APK + Wear OS APK
 </p>
 
 _A research-grade intervention delivery system for Wear OS and Android._
@@ -58,8 +58,8 @@ Every release ships both APKs signed with the **same key**, so the Wearable Data
 
 | File | Install on | Minimum OS |
 |------|-----------|------------|
-| `JITAI-Wizard-Phone-v2.0.0.apk` | Android phone | Android 10 (API 29) |
-| `JITAI-Wizard-Watch-v2.0.0.apk` | Wear OS watch | Wear OS 4.0 (API 33) |
+| `JITAI-Wizard-Phone-v2.1.0-beta.apk` | Android phone | Android 10 (API 29) |
+| `JITAI-Wizard-Watch-v2.1.0-beta.apk` | Wear OS watch | Wear OS 4.0 (API 33) |
 
 1. On both devices, allow installs from your browser/file manager (**Settings → Apps → Install unknown apps**).
 2. Download and install the **Phone** APK on the Android phone.
@@ -208,7 +208,7 @@ As close as possible to Robin Buchards Features, which include:
 - Save and load named experiment schedules on the phone
 - The Load dialog also has an **Import from phone…** button that opens a file picker; the chosen experiment JSON is saved as a schedule slot and appears in the list immediately
 - The Save dialog has an **Export to file (Downloads)** button that writes the current experiment as a `.json` to `Downloads/JITAI_WIZARD_experiments/` (visible in the Files app / over USB) and shows the saved path in a toast
-- Three extra templates ship bundled and appear ready-to-load in the Load dialog -- **Distraction Combo - No Games**, **Alternate Microgame - Lock Picking**, and **Stand Still Only** -- alongside the seeded default. They mirror the Control Station's `Assets/experiment_*.json`. Each is a single hand-wash cycle (Wizard-of-Oz, no tutorial) with a clearly marked HW-timer start/stop. Deleting a bundled template will not bring it back on the next launch.
+- Eight templates ship bundled and appear ready-to-load in the Load dialog: the English default (**Default - Hand-washing Study**), **Distraction Combo - No Games**, **Alternate Microgame - Lock Picking** and **Stand Still Only**, plus a German variant of each (slot names start with **DE -**, for example **DE - Handhygiene - Nur Stillstehen**). They mirror the Control Station's `Assets/experiment_*.json`. Each is a single hand-wash cycle (Wizard-of-Oz, no tutorial) with a clearly marked HW-timer start/stop, and each pins the microgame difficulty to medium (Simon Says 3/5 with 4 rounds, Lock Picking 3/5, a mistake stuns). Deleting a bundled template will not bring it back on the next launch; a template that was seeded by an earlier version is not refreshed, so import the updated file to replace it.
 - Optional TSV log output to Downloads/JITAI_WIZARD_logs
 - Optional standalone **CSV export** to `Downloads/JITAI_WIZARD_csv/` (same "Save Logs" toggle): a 1:1 reproduction of the ControlStation multi-section CSV, captured on the phone alone — no ControlStation required
 
