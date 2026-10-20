@@ -37,3 +37,16 @@ data class Event(
         )
     }
 }
+
+/**
+ * Moves the event with id [fromKey] to the slot currently held by the event with id [toKey].
+ * Matches by id, not index: the schedule's LazyColumn has a header item ahead of the events, so
+ * the indices the reorder library reports run ahead of positions in this list. Returns the list
+ * unchanged if either id is not in it.
+ */
+fun List<Event>.movedByKey(fromKey: Any?, toKey: Any?): List<Event> {
+    val from = indexOfFirst { it.id == fromKey }
+    val to = indexOfFirst { it.id == toKey }
+    if (from < 0 || to < 0 || from == to) return this
+    return toMutableList().apply { add(to, removeAt(from)) }
+}

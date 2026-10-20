@@ -55,6 +55,7 @@ import com.BWPStudio.JITAIWizard.experiment.Event
 import com.BWPStudio.JITAIWizard.experiment.ExperimentStore
 import com.BWPStudio.JITAIWizard.experiment.LogEvent
 import com.BWPStudio.JITAIWizard.experiment.SessionState
+import com.BWPStudio.JITAIWizard.experiment.movedByKey
 import com.BWPStudio.JITAIWizard.ui.components.StringOptionDropdown
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -107,7 +108,9 @@ fun ExperimentScreen(onWearError: (String) -> Unit = {}) {
     }
     val lazyListState = rememberLazyListState()
     val reorderState = rememberReorderableLazyListState(lazyListState) { from, to ->
-        list = list.toMutableList().apply { add(to.index, removeAt(from.index)) }
+        // By key, not index: the trigger-summary header sits at lazy index 0, so from.index and
+        // to.index are one ahead of the event's position in `list`.
+        list = list.movedByKey(from.key, to.key)
     }
     val scope = rememberCoroutineScope()
     var editMode by remember { mutableStateOf(false) }
